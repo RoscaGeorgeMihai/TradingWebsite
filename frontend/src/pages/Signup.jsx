@@ -21,7 +21,6 @@ const SignUp = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Aici ar trebui adăugată logica de înregistrare
     console.log('Registration attempt:', formData);
   };
 

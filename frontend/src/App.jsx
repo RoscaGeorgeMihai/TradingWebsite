@@ -9,6 +9,8 @@ import Invest from "./pages/Invest";
 import Stocks from "./pages/Stocks";
 import Commodities from "./pages/Commodities";
 import News from "./pages/News";
+import StockDetails from "./pages/StockDetails";
+import Portfolio from "./pages/Portfolio"
 
 function App() {
   return (
@@ -22,7 +24,9 @@ function App() {
         <Route path="/crypto" element={<Crypto />} />
         <Route path="/stocks" element={<Stocks />} />
         <Route path="/commodities" element={<Commodities />} />
+        <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/news" element={<News />} />
+        <Route path="/stocks/:symbol" element={<StockDetails />} />
       </Routes>
     </Router>
   );

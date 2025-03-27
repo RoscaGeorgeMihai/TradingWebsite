@@ -8,7 +8,6 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Aici ar trebui adăugată logica de autentificare
     console.log('Login attempt:', { email, password, rememberMe });
   };
 

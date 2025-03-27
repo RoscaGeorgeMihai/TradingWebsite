@@ -121,7 +121,6 @@
     text-decoration: underline;
   }
   
-  /* Responsive design */
   @media (max-width: 480px) {
     .login-form-wrapper {
       padding: 20px;

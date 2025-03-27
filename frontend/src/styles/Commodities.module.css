@@ -1,0 +1,363 @@
+:root {
+    --primary-bg: #001219;
+    --secondary-bg: #0a2533;
+    --card-bg: #0e2c3b;
+    --accent-color: #00b3d2;
+    --text-color: #ffffff;
+    --green: #22c55e;
+    --red: #ef4444;
+    --border-color: #1e3a47;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    color: var(--text-color);
+    margin-bottom: 20px;
+}
+
+.search-filter {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.search-box {
+    padding: 10px 15px;
+    width: 300px;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.filter-button {
+    padding: 10px 20px;
+    background-color: var(--accent-color);
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.filter-button:hover {
+    opacity: 0.9;
+}
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.tab {
+    border: none;
+    padding: 10px 20px;
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    border-radius: 8px;
+    font: inherit;
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+    z-index: 1;
+    position: relative;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+  
+
+.tab.active {
+    background-color: var(--accent-color);
+    color: #000;
+    font-weight: 600;
+  }
+
+.cryptocurrencies-scroll-container {
+    display: flex;
+    overflow-x: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    width: 100%;
+    position: relative;
+}
+
+.crypto-scroll-item {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 100%;
+    opacity: 0.7;
+    transform: scale(0.95);
+}
+
+.crypto-scroll-item.active-crypto {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.crypto-main-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stock-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stock-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.stock-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.stock-symbol {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.stock-name {
+    font-size: 1rem;
+    color: #a8b3cf;
+}
+
+.stock-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.price-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.price-change {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.positive {
+    color: var(--green);
+}
+
+.negative {
+    color: var(--red);
+}
+
+.crypto-price-chart {
+    position: relative;
+    width: 90%;
+    height: 200px;
+    max-width: 100%;
+}
+
+.crypto-indicators {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    gap: 10px;
+}
+
+.crypto-indicator-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--secondary-bg);
+    transition: background-color 0.3s ease;
+}
+
+.crypto-indicator-dot.active {
+    background-color: var(--accent-color);
+}
+
+.stocks-grid {
+    display: grid;
+    place-items: center; 
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.market-card {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    width: 90%;
+}
+
+.market-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.market-name {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.view-all {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+.stocks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.stock-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-radius: 12px;
+    transition: background-color 0.2s ease;
+}
+
+.stock-item:hover {
+    background-color: var(--secondary-bg);
+}
+
+@media (max-width: 768px) {
+    .search-filter {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .search-box {
+        width: 100%;
+        max-width: 350px;
+    }
+
+    .crypto-scroll-item {
+        padding: 15px;
+    }
+
+    .stock-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .stock-symbol {
+        font-size: 1rem;
+    }
+
+    .stock-name {
+        font-size: 0.9rem;
+    }
+
+    .price-value {
+        font-size: 1.2rem;
+    }
+
+    .price-change {
+        font-size: 0.9rem;
+    }
+
+    .crypto-price-chart {
+        height: 180px;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 1.8rem;
+    }
+
+    .search-box {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+
+    .filter-button {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+
+    .crypto-scroll-item {
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .stock-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+
+    .stock-symbol {
+        font-size: 0.95rem;
+    }
+
+    .stock-name {
+        font-size: 0.85rem;
+    }
+
+    .price-value {
+        font-size: 1rem;
+    }
+
+    .price-change {
+        font-size: 0.85rem;
+    }
+
+    .crypto-price-chart {
+        height: 140px;
+    }
+}

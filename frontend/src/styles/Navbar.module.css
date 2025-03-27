@@ -10,7 +10,7 @@
   border-bottom: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-.navbar-container {
+.navbarContainer {
   width: 100%;
   max-width: 1200px;
   display: flex;
@@ -18,25 +18,24 @@
   align-items: center;
 }
 
-/* MENIU - Desktop */
-.nav-links {
+.navLinks {
   list-style: none;
   display: flex;
   gap: 40px;
 }
 
-.nav-links li a {
+.navLinks li a {
   text-decoration: none;
   color: white;
   font-weight: bolder;
   font-size: 20px;
 }
 
-.nav-links li a:hover {
+.navLinks li a:hover {
   color: #13d7da;
 }
 
-.logo-container {
+.logoContainer {
   padding: 5px;
   display: inline-block;
   align-self: center;
@@ -46,7 +45,7 @@
   text-align: center;
 }
 
-.logo-text {
+.logoText {
   margin: 0;
   padding: 0;
   font-size: 26px;
@@ -80,14 +79,13 @@
   margin-left: 0.5rem;
 }
 
-/* BUTOANE */
-.auth-buttons {
+.authButtons {
   display: flex;
   gap: 10px;
 }
 
-.login-btn,
-.signup-btn {
+.loginBtn,
+.signupBtn {
   font-size: 15px;
   padding: 8px 12px;
   font-weight: bold;
@@ -95,7 +93,7 @@
   cursor: pointer;
 }
 
-.login-btn {
+.loginBtn {
   background: none;
   color: white;
   font-weight: bold;
@@ -103,15 +101,14 @@
   border-radius: 5px;
 }
 
-.signup-btn {
+.signupBtn {
   background-color: #093242;
   color: white;
   border-radius: 5px;
   border-color: #2c3e50;
 }
 
-/* MENIU HAMBURGER (Mobil) */
-.menu-btn {
+.menuBtn {
   font-size: 24px;
   background: none;
   border: none;
@@ -120,49 +117,51 @@
   display: none;
 }
 
-/* Stiluri pentru meniu derulant */
 .dropdown {
   position: relative;
 }
 
-.dropdown-menu {
+.dropdownMenu {
   display: none;
   position: absolute;
-  top: 100%; /* Poziționează submeniul sub link-ul "Markets" */
-  left: 50%; /* Mută meniul derulant mai în dreapta */
-  transform: translateX(-50%); /* Centrează meniul derulant față de link-ul "Markets" */
+  top: 100%; 
+  left: 50%; 
+  transform: translateX(-50%);
   background-color: #001f23;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 5px;
   padding: 10px 0;
   list-style: none;
-  z-index: 1000; /* Asigură-te că submeniul este deasupra altor elemente */
-  margin-top: 1rem;
+  z-index: 1000;
 }
 
-.dropdown-menu li {
+.dropdownMenu li {
   padding: 8px 20px;
-  white-space: nowrap; /* Previne împărțirea textului pe mai multe linii */
+  white-space: nowrap; 
 }
 
-.dropdown-menu li a {
+.dropdownMenu li a {
   color: white;
   text-decoration: none;
   font-size: 16px;
 }
 
-.dropdown-menu li a:hover {
+.dropdownMenu li a:hover {
   color: #13d7da;
 }
 
-/* Afișează submeniul la hover */
-.dropdown:hover .dropdown-menu {
+.dropdownMenu.active {
   display: block;
 }
 
-/* RESPONSIVITATE (Mobil) */
+@media (min-width: 769px) {
+  .dropdown:hover .dropdownMenu {
+    display: block;
+  }
+}
+
 @media (max-width: 768px) {
-  .nav-links {
+  .navLinks {
     display: none;
     flex-direction: column;
     position: absolute;
@@ -176,14 +175,15 @@
     z-index: 100;
   }
 
-  .nav-links.open {
+  .navLinks.open {
     display: flex;
   }
 
-  .menu-btn {
+  .menuBtn {
     display: block;
   }
-  .nav-links li {
+  
+  .navLinks li {
     list-style: none;
     padding: 0px;
     font-size: 18px;
@@ -192,35 +192,42 @@
     width: 90%;
     margin: 0 auto;
   }
-  .nav-links li a {
+  
+  .navLinks li a {
     line-height: 1;
     padding: 2px 0;
     display: block;
   }
-  .dropdown-menu {
-    position: static; /* Submeniul va fi afișat sub link-ul "Markets" */
+  
+  .dropdownMenu {
+    position: static;
     display: none;
     background-color: transparent;
     border: none;
     padding: 0;
-    left: 10%; /* Resetează poziționarea pentru mobil */
-    transform: translateX(-3%); /* Resetează transformarea pentru mobil */
+    left: 10%;
+    transform: translateX(-3%);
   }
 
-  .dropdown-menu li {
+  .dropdownMenu li {
     padding: 5px 0;
     border-bottom: none;
   }
 
-  .dropdown-menu li a {
+  .dropdownMenu li a {
     font-size: 16px;
-    padding-left: 20px; /* Indentare pentru submeniu */
+    padding-left: 20px;
   }
-
-  .dropdown:hover .dropdown-menu {
+  
+  .dropdown:hover .dropdownMenu {
+    display: none;
+  }
+  
+  .dropdown:hover .dropdownMenu.active {
     display: block;
   }
-  .tagline{
+  
+  .tagline {
     margin-left: 0;
   }
 }

@@ -7,7 +7,6 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
   const [visibleCryptos, setVisibleCryptos] = useState([]);
   const [visibleNews, setVisibleNews] = useState([]);
 
-  // Set visibility after component mounts
   useEffect(() => {
     if (!cryptocurrencies || !news || cryptocurrencies.length === 0 || news.length === 0) {
       return;
@@ -15,7 +14,6 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
   
     setVisible(true);
   
-    // Afișare treptată a criptomonedelor
     let index = 0;
     const cryptoInterval = setInterval(() => {
       if (index < cryptocurrencies.length) {
@@ -26,8 +24,7 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
       }
     }, 300);
   
-    // Afișare simultană a știrilor
-    setVisibleNews(news.map(item => item.id)); // Adaugă toate ID-urile știrilor simultan
+    setVisibleNews(news.map(item => item.id)); 
   
     return () => {
       clearInterval(cryptoInterval);
@@ -37,7 +34,6 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
 
   return (
     <div className={`crypto-dashboard ${visible ? 'visible' : ''}`}>
-      {/* Secțiunea de monede populare */}
       <div className="crypto-section">
         <div className="flex justify-between mb-4">
           <div className="flex space-x-4">
@@ -73,7 +69,6 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
         </div>
       </div>
 
-      {/* Secțiunea de știri */}
       <div className="news-section">
         <div className="flex justify-between mb-4">
           <h2 className="news-title">News</h2>
