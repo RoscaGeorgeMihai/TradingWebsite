@@ -1,43 +1,105 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Importă useNavigate
-import "../styles/Navbar.css";
+import { useNavigate } from "react-router-dom";
+import styles from "../styles/Navbar.module.css";
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const navigate = useNavigate(); // Inițializează navigatorul
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
+  const handleNavigation = (path, event) => {
+    event.preventDefault();
+    navigate(path);
+    setMenuOpen(false);
+  };
 
   return (
-    <nav className="navbar">
-      <div className="navbar-container">
-      <div className="logo-container">
-        <div className="logo">
-          <h1 className="logo-text">TR<span className="accent">A</span>DING APP</h1>
-          <p className="tagline">Build wealth in time</p>
+    <nav className={styles.navbar}>
+      <div className={styles.navbarContainer}>
+        <div className={styles.logoContainer}>
+          <div className={styles.logo}>
+            <h1 className={styles.logoText}>
+              TR<span className={styles.accent}>A</span>DING APP
+            </h1>
+            <p className={styles.tagline}>Build wealth in time</p>
+          </div>
         </div>
-      </div>
 
-        <ul className={`nav-links ${menuOpen ? "open" : ""}`}>
-          <li><a href="/">Home</a></li>
-          <li><a href="/invest">Invest</a></li>
-          <li className="dropdown">
-            <a href="#">Markets</a>
-            <ul className="dropdown-menu">
-              <li><a href="/crypto">Crypto</a></li>
-              <li><a href="/stocks">Stocks</a></li>
-              <li><a href="/commodities">Commodities</a></li>
+        <ul className={`${styles.navLinks} ${menuOpen ? styles.open : ""}`}>
+          <li>
+            <a href="/" onClick={(e) => handleNavigation("/", e)}>
+              Home
+            </a>
+          </li>
+          <li>
+            <a href="/invest" onClick={(e) => handleNavigation("/invest", e)}>
+              Invest
+            </a>
+          </li>
+          <li className={styles.dropdown}>
+            <a 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                toggleDropdown();
+              }}
+            >
+              Markets <span className={styles.dropdownIcon}>▼</span>
+            </a>
+            <ul className={`${styles.dropdownMenu} ${dropdownOpen ? styles.active : ""}`}>
+              <li>
+                <a href="/crypto" onClick={(e) => handleNavigation("/crypto", e)}>
+                  Crypto
+                </a>
+              </li>
+              <li>
+                <a href="/stocks" onClick={(e) => handleNavigation("/stocks", e)}>
+                  Stocks
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/commodities" 
+                  onClick={(e) => handleNavigation("/commodities", e)}
+                >
+                  Commodities
+                </a>
+              </li>
             </ul>
           </li>
-          <li><a href="/news">News</a></li>
+          <li>
+            <a 
+              href="/portfolio" 
+              onClick={(e) => handleNavigation("/portfolio", e)}
+            >
+              Portfolio
+            </a>
+          </li>
+          <li>
+            <a href="/news" onClick={(e) => handleNavigation("/news", e)}>
+              News
+            </a>
+          </li>
         </ul>
 
-        <div className="auth-buttons">
-          <button className="login-btn" onClick={() => navigate("/login")}>
+        <div className={styles.authButtons}>
+          <button className={styles.loginBtn} onClick={() => navigate("/login")}>
             Log In
           </button>
-          <button className="signup-btn" onClick={() => navigate("/signup")}>Sign Up</button>
+          <button className={styles.signupBtn} onClick={() => navigate("/signup")}>
+            Sign Up
+          </button>
         </div>
 
-        <button className="menu-btn" onClick={() => setMenuOpen(!menuOpen)}>
+        <button className={styles.menuBtn} onClick={toggleMenu}>
           ☰
         </button>
       </div>

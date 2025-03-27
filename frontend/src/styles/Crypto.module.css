@@ -1,0 +1,339 @@
+:root {
+    --primary-bg: #001219;
+    --secondary-bg: #0a2533;
+    --card-bg: #0e2c3b;
+    --accent-color: #00b3d2;
+    --text-color: #ffffff;
+    --green: #22c55e;
+    --red: #ef4444;
+    --border-color: #1e3a47;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.pageHeader {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.pageTitle {
+    font-size: 2.5rem;
+    color: var(--text-color);
+    margin-bottom: 20px;
+}
+
+.searchFilter {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.searchBox {
+    padding: 10px 15px;
+    width: 300px;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.filterButton {
+    padding: 10px 20px;
+    background-color: var(--accent-color);
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.filterButton:hover {
+    opacity: 0.9;
+}
+
+.cryptocurrenciesScrollContainer {
+    display: flex;
+    overflow-x: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    width: 100%;
+    position: relative;
+    border-radius: 20px;
+}
+
+.cryptoScrollItem {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 100%;
+    opacity: 0.7;
+    transform: scale(0.95);
+}
+
+.cryptoScrollItem.activeCrypto {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.cryptoMainInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stockInfo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-left:20px;
+}
+
+.stockIcon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.stockDetails {
+    display: flex;
+    flex-direction: column;
+}
+
+.stockSymbol {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.stockName {
+    font-size: 1rem;
+    color: #a8b3cf;
+}
+
+.stockPrice {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-right: 50px;
+}
+
+.priceValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.priceChange {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.positive {
+    color: var(--green);
+}
+
+.negative {
+    color: var(--red);
+}
+
+.timeIntervalSelector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 0 20px;
+}
+
+.timeIntervalButton {
+    padding: 8px 16px;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.timeIntervalButton:hover {
+    background-color: rgba(0, 179, 210, 0.2);
+}
+
+.timeIntervalButton.activeTimeInterval {
+    background-color: var(--accent-color);
+    color: #000;
+    border-color: var(--accent-color);
+}
+
+.cryptoPriceChart {
+    position: relative;
+    width: 90%;
+    height: 15rem;
+    padding-left: 3rem;
+    padding-top: 1rem;
+    max-width: 90%;
+}
+
+.cryptoIndicators {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    gap: 10px;
+}
+
+.cryptoIndicatorDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--secondary-bg);
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+}
+
+.cryptoIndicatorDot.active {
+    background-color: var(--accent-color);
+    width: 12px;
+    height: 12px;
+}
+
+@media (max-width: 768px) {
+    .searchFilter {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .searchBox {
+        width: 100%;
+        max-width: 350px;
+    }
+
+    .cryptoScrollItem {
+        padding: 15px;
+    }
+
+    .stockIcon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .stockSymbol {
+        font-size: 1rem;
+    }
+
+    .stockName {
+        font-size: 0.9rem;
+    }
+
+    .priceValue {
+        font-size: 1.2rem;
+    }
+
+    .priceChange {
+        font-size: 0.9rem;
+    }
+    
+    .timeIntervalSelector {
+        gap: 5px;
+    }
+    
+    .timeIntervalButton {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .cryptoPriceChart {
+        height: 12rem;
+        padding-left:1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .pageTitle {
+        font-size: 1.8rem;
+    }
+
+    .searchBox {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+
+    .filterButton {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+
+    .cryptoScrollItem {
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .stockIcon {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+
+    .stockSymbol {
+        font-size: 0.95rem;
+    }
+
+    .stockName {
+        font-size: 0.85rem;
+    }
+
+    .priceValue {
+        font-size: 1rem;
+    }
+
+    .priceChange {
+        font-size: 0.85rem;
+    }
+    
+    .timeIntervalSelector {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .timeIntervalButton {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        flex: 1 0 auto;
+    }
+
+    .cryptoPriceChart {
+        height: 12rem;
+        padding-left:1rem;
+    }
+}

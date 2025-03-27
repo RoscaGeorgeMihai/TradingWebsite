@@ -1,7 +1,7 @@
 import React from "react";
 import "../styles/Home.css";
 import CryptoDashboard from "../components/CryptoDashboard.jsx";
-import usersImage from "../assets/users.png"; // Asigură-te că ai o imagine în acest folder
+import usersImage from "../assets/users.png"; 
 
 const HomePage = () => {
   const cryptocurrencies = [
@@ -23,16 +23,13 @@ const HomePage = () => {
     <div className="homepage">
       <div className="background-image"></div>
 
-      {/* Layout cu două coloane */}
       <div className="container mx-auto flex items-center justify-between py-8">
         
-        {/* Secțiunea din stânga cu imaginea și textul */}
         <div className="info-section">
           <img src={usersImage} alt="Users" className="users-image"/>
           <h1 className="users-text">Over 2.5 Million Users Trust Our Platform</h1>
         </div>
 
-        {/* Dashboard-ul Crypto */}
         <CryptoDashboard cryptocurrencies={cryptocurrencies} news={news} />
       </div>
     </div>
