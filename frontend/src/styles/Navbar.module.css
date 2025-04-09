@@ -1,13 +1,22 @@
+/* Updated Navbar styling to match the dashboard theme */
 .navbar {
-  background-color: #001f23;
+  background-color: var(--dark-bg);
   font-size: 15px;
-  color: white;
+  color: var(--text-color);
   display: flex;
   justify-content: center;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
     Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  
+  /* Adăugare pentru poziționare fixă */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
 }
 
 .navbarContainer {
@@ -16,27 +25,45 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0 20px;
 }
 
 .navLinks {
   list-style: none;
   display: flex;
-  gap: 40px;
+  gap: 50px;
+  margin: 0;
+  padding: 18px 0;
 }
 
 .navLinks li a {
   text-decoration: none;
-  color: white;
-  font-weight: bolder;
+  color: var(--text-color);
+  font-weight: 600;
   font-size: 20px;
+  transition: color 0.2s ease;
+  position: relative;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
 .navLinks li a:hover {
-  color: #13d7da;
+  color: var(--secondary-color);
+}
+
+.navLinks li a:hover::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--secondary-color);
+  opacity: 0.8;
 }
 
 .logoContainer {
-  padding: 5px;
+  padding: 15px 0;
   display: inline-block;
   align-self: center;
 }
@@ -51,12 +78,12 @@
   font-size: 26px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #fff;
+  color: var(--text-color);
   line-height: 1;
 }
 
 .accent {
-  color: #13d7da;
+  color: var(--secondary-color);
   position: relative;
 }
 
@@ -67,12 +94,13 @@
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: #00b8ff;
+  background-color: var(--secondary-color);
 }
 
 .tagline {
   margin: 5px 0 0 0;
-  color: #fff;
+  color: var(--text-color);
+  opacity: 0.8;
   font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.5px;
@@ -81,44 +109,73 @@
 
 .authButtons {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .loginBtn,
 .signupBtn {
-  font-size: 15px;
-  padding: 8px 12px;
-  font-weight: bold;
+  font-size: 14px;
+  padding: 8px 16px;
+  font-weight: 600;
   border: none;
   cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease, transform 0.1s ease;
 }
 
 .loginBtn {
-  background: none;
-  color: white;
-  font-weight: bold;
-  border: 1px solid #cf2532;
-  border-radius: 5px;
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--secondary-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.loginBtn:hover {
+  background-color: rgba(13, 202, 240, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .signupBtn {
-  background-color: #093242;
-  color: white;
-  border-radius: 5px;
-  border-color: #2c3e50;
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.signupBtn:hover {
+  background-color: #0bbad8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.loginBtn:active,
+.signupBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .menuBtn {
   font-size: 24px;
   background: none;
   border: none;
-  color: white;
+  color: var(--text-color);
   cursor: pointer;
   display: none;
+  transition: color 0.2s ease;
+}
+
+.menuBtn:hover {
+  color: var(--secondary-color);
 }
 
 .dropdown {
   position: relative;
+}
+
+.dropdownIcon {
+  font-size: 12px;
+  margin-left: 5px;
+  color: var(--secondary-color);
 }
 
 .dropdownMenu {
@@ -127,36 +184,56 @@
   top: 100%; 
   left: 50%; 
   transform: translateX(-50%);
-  background-color: #001f23;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 5px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
   padding: 10px 0;
   list-style: none;
   z-index: 1000;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  min-width: 180px;
 }
 
 .dropdownMenu li {
-  padding: 8px 20px;
-  white-space: nowrap; 
+  padding: 8px 15px;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.dropdownMenu li:hover {
+  background-color: rgba(13, 202, 240, 0.1);
 }
 
 .dropdownMenu li a {
-  color: white;
+  color: var(--text-color);
   text-decoration: none;
-  font-size: 16px;
+  font-size: 14px;
+  display: block;
+  padding: 2px 5px;
 }
 
 .dropdownMenu li a:hover {
-  color: #13d7da;
+  color: var(--secondary-color);
+}
+
+.dropdownMenu li a:hover::after {
+  display: none;
 }
 
 .dropdownMenu.active {
   display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Stil pentru spațiul dintre navbar fix și conținut */
+:global(body) {
+  padding-top: 80px; /* Ajustează această valoare în funcție de înălțimea navbar-ului tău */
 }
 
 @media (min-width: 769px) {
   .dropdown:hover .dropdownMenu {
     display: block;
+    animation: fadeIn 0.3s ease;
   }
 }
 
@@ -165,18 +242,22 @@
     display: none;
     flex-direction: column;
     position: absolute;
-    top: 50px;
+    top: 60px;
     left: 0;
     width: 100%;
-    background: #001f23;
+    background: var(--dark-bg);
     padding: 0;
     margin: 0;
     text-align: center;
     z-index: 100;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--border-color);
+    margin-top: 40px;
   }
 
   .navLinks.open {
     display: flex;
+    animation: fadeIn 0.3s ease;
   }
 
   .menuBtn {
@@ -185,37 +266,49 @@
   
   .navLinks li {
     list-style: none;
-    padding: 0px;
-    font-size: 18px;
-    border-bottom: 1.5px solid white;
-    padding-bottom: 5px;
+    padding: 12px 0;
+    font-size: 16px;
+    border-bottom: 1px solid var(--border-color);
     width: 90%;
     margin: 0 auto;
   }
   
+  .navLinks li:last-child {
+    border-bottom: none;
+  }
+  
   .navLinks li a {
-    line-height: 1;
+    line-height: 1.2;
     padding: 2px 0;
     display: block;
+  }
+  
+  .navLinks li a:hover::after {
+    display: none;
   }
   
   .dropdownMenu {
     position: static;
     display: none;
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.2);
     border: none;
-    padding: 0;
-    left: 10%;
-    transform: translateX(-3%);
+    border-radius: 0;
+    padding: 5px 0;
+    margin-top: 8px;
+    box-shadow: none;
+    transform: none;
+    left: 0;
+    width: 100%;
   }
 
   .dropdownMenu li {
-    padding: 5px 0;
+    padding: 8px 0;
     border-bottom: none;
+    width: 100%;
   }
 
   .dropdownMenu li a {
-    font-size: 16px;
+    font-size: 14px;
     padding-left: 20px;
   }
   
@@ -229,5 +322,20 @@
   
   .tagline {
     margin-left: 0;
+  }
+  
+  .authButtons {
+    gap: 8px;
+  }
+  
+  .loginBtn, 
+  .signupBtn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  /* Ajustează padding-top pentru versiunea mobilă */
+  :global(body) {
+    padding-top: 70px; /* Ajustează această valoare în funcție de înălțimea navbar-ului pe mobil */
   }
 }

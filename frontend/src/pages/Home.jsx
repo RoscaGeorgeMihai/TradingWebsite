@@ -1,7 +1,7 @@
 import React from "react";
-import "../styles/Home.css";
+import styles from "../styles/Home.module.css";
 import CryptoDashboard from "../components/CryptoDashboard.jsx";
-import usersImage from "../assets/users.png"; 
+import usersImage from "../assets/users.png";
 
 const HomePage = () => {
   const cryptocurrencies = [
@@ -11,7 +11,7 @@ const HomePage = () => {
     { id: 'xrp', symbol: 'XRP', name: 'XRP', price: '$2.30', change: '+2.55%', isPositive: true, iconColorHex: '#7f8c8d', iconSymbol: 'X' },
     { id: 'sol', symbol: 'SOL', name: 'Solana', price: '$124.84', change: '+0.43%', isPositive: true, iconColorHex: '#9b59b6', iconSymbol: 'S' }
   ];
-
+  
   const news = [
     { id: 1, title: 'Solana Governance Proposal Achieves Record Voting Participation' },
     { id: 2, title: 'Bitcoin Symbol Featured in Austin Drone Show' },
@@ -20,16 +20,17 @@ const HomePage = () => {
   ];
 
   return (
-    <div className="homepage">
-      <div className="background-image"></div>
-
-      <div className="container mx-auto flex items-center justify-between py-8">
-        
-        <div className="info-section">
-          <img src={usersImage} alt="Users" className="users-image"/>
-          <h1 className="users-text">Over 2.5 Million Users Trust Our Platform</h1>
+    <div className={styles.homepage}>
+      <div className={styles.backgroundImage}></div>
+      
+      <div className={styles.container}>
+        <div className={styles.infoSection}>
+          <img src={usersImage} alt="Users" className={styles.usersImage}/>
+          <h1 className={styles.usersText}>
+            Over <span className={styles.accent}>2.5 Million</span> Users Trust Our Platform
+          </h1>
         </div>
-
+        
         <CryptoDashboard cryptocurrencies={cryptocurrencies} news={news} />
       </div>
     </div>

@@ -1,0 +1,12 @@
+/* Adaugă acest cod în fișierul CSS global al aplicației (de obicei index.css sau App.css) */
+
+.page-content {
+    padding-top: 80px; /* Ajustează această valoare pentru a se potrivi cu înălțimea navbar-ului tău */
+    min-height: calc(100vh - 80px);
+  }
+  
+  @media (max-width: 768px) {
+    .page-content {
+      padding-top: 80px; /* Ajustează pentru versiunea mobilă */
+    }
+  }

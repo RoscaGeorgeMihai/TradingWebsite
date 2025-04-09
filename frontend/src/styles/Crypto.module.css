@@ -1,71 +1,87 @@
-:root {
-    --primary-bg: #001219;
-    --secondary-bg: #0a2533;
-    --card-bg: #0e2c3b;
-    --accent-color: #00b3d2;
-    --text-color: #ffffff;
-    --green: #22c55e;
-    --red: #ef4444;
-    --border-color: #1e3a47;
+/* No results */
+.noResults {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 40px;
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: var(--primary-bg);
-    color: var(--text-color);
-    min-height: 100vh;
+.noResults p {
+    font-size: 1.1rem;
+    color: #a8b3cf;
 }
 
-.container {
-    width: 100%;
-    max-width: 1200px;
+/* Newsletter section */
+.newsletterContainer {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 40px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    background-image: linear-gradient(to right, rgba(0, 179, 210, 0.1), transparent);
+}
+
+.newsletterContent {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.newsletterContent h2 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    color: var(--accent-color);
+}
+
+.newsletterContent p {
+    font-size: 1rem;
+    margin-bottom: 25px;
+    color: #a8b3cf;
+}
+
+.subscribeForm {
+    display: flex;
+    max-width: 500px;
     margin: 0 auto;
 }
 
-.pageHeader {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.pageTitle {
-    font-size: 2.5rem;
-    color: var(--text-color);
-    margin-bottom: 20px;
-}
-
-.searchFilter {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.searchBox {
+.emailInput {
+    flex: 1;
     padding: 10px 15px;
-    width: 300px;
-    background-color: var(--secondary-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-color);
     font-size: 1rem;
+    border-radius: 8px 0 0 8px;
+    border: 1px solid var(--border-color);
+    border-right: none;
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
 }
 
-.filterButton {
+.emailInput:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background-color: var(--secondary-bg);
+}
+
+.subscribeBtn {
     padding: 10px 20px;
     background-color: var(--accent-color);
-    border: none;
-    border-radius: 8px;
     color: #000;
+    border: none;
+    border-radius: 0 8px 8px 0;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.2s ease;
 }
 
-.filterButton:hover {
+.subscribeBtn:hover {
     opacity: 0.9;
 }
 
+/* Scroll container and indicators */
 .cryptocurrenciesScrollContainer {
     display: flex;
     overflow-x: hidden;
@@ -73,7 +89,8 @@ body {
     scroll-behavior: smooth;
     width: 100%;
     position: relative;
-    border-radius: 20px;
+    border-radius: 16px;
+    margin-bottom: 20px;
 }
 
 .cryptoScrollItem {
@@ -98,117 +115,10 @@ body {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
-.cryptoMainInfo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.stockInfo {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding-left:20px;
-}
-
-.stockIcon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: white;
-    font-size: 1.2rem;
-}
-
-.stockDetails {
-    display: flex;
-    flex-direction: column;
-}
-
-.stockSymbol {
-    font-size: 1.2rem;
-    font-weight: 700;
-}
-
-.stockName {
-    font-size: 1rem;
-    color: #a8b3cf;
-}
-
-.stockPrice {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    padding-right: 50px;
-}
-
-.priceValue {
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.priceChange {
-    font-size: 1rem;
-    font-weight: 600;
-}
-
-.positive {
-    color: var(--green);
-}
-
-.negative {
-    color: var(--red);
-}
-
-.timeIntervalSelector {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 15px;
-    padding: 0 20px;
-}
-
-.timeIntervalButton {
-    padding: 8px 16px;
-    background-color: var(--secondary-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-color);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 600;
-    font-size: 0.85rem;
-}
-
-.timeIntervalButton:hover {
-    background-color: rgba(0, 179, 210, 0.2);
-}
-
-.timeIntervalButton.activeTimeInterval {
-    background-color: var(--accent-color);
-    color: #000;
-    border-color: var(--accent-color);
-}
-
-.cryptoPriceChart {
-    position: relative;
-    width: 90%;
-    height: 15rem;
-    padding-left: 3rem;
-    padding-top: 1rem;
-    max-width: 90%;
-}
-
 .cryptoIndicators {
     display: flex;
     justify-content: center;
-    margin-top: 15px;
+    margin: 15px 0 40px;
     gap: 10px;
 }
 
@@ -227,98 +137,93 @@ body {
     height: 12px;
 }
 
-@media (max-width: 768px) {
-    .searchFilter {
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+    .filtersContainer {
         flex-direction: column;
         align-items: center;
     }
+}
 
+@media (max-width: 768px) {
+    .cryptoGrid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+    
+    .featuredContent {
+        padding: 20px;
+    }
+    
+    .cryptoInfo h2 {
+        font-size: 1.5rem;
+    }
+    
+    .currentPrice {
+        font-size: 1.8rem;
+    }
+    
+    .priceChange {
+        font-size: 1rem;
+    }
+    
+    .subscribeForm {
+        flex-direction: column;
+    }
+    
+    .emailInput {
+        border-radius: 8px;
+        border-right: 1px solid var(--border-color);
+        margin-bottom: 10px;
+    }
+    
+    .subscribeBtn {
+        border-radius: 8px;
+        width: 100%;
+    }
+    
     .searchBox {
         width: 100%;
         max-width: 350px;
     }
-
-    .cryptoScrollItem {
-        padding: 15px;
-    }
-
-    .stockIcon {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-
-    .stockSymbol {
-        font-size: 1rem;
-    }
-
-    .stockName {
-        font-size: 0.9rem;
-    }
-
-    .priceValue {
-        font-size: 1.2rem;
-    }
-
-    .priceChange {
-        font-size: 0.9rem;
-    }
-    
-    .timeIntervalSelector {
-        gap: 5px;
-    }
-    
-    .timeIntervalButton {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-    }
-    
-    .cryptoPriceChart {
-        height: 12rem;
-        padding-left:1.5rem;
-    }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 576px) {
     .pageTitle {
         font-size: 1.8rem;
     }
-
-    .searchBox {
-        padding: 8px 12px;
+    
+    .pageSubtitle {
         font-size: 0.9rem;
     }
-
-    .filterButton {
-        padding: 8px 16px;
-        font-size: 0.9rem;
+    
+    .cryptoInfo h2 {
+        font-size: 1.3rem;
     }
-
-    .cryptoScrollItem {
-        padding: 12px;
-        border-radius: 12px;
-    }
-
-    .stockIcon {
-        width: 35px;
-        height: 35px;
-        font-size: 0.9rem;
-    }
-
-    .stockSymbol {
-        font-size: 0.95rem;
-    }
-
-    .stockName {
-        font-size: 0.85rem;
-    }
-
-    .priceValue {
+    
+    .symbolLabel {
         font-size: 1rem;
     }
-
-    .priceChange {
-        font-size: 0.85rem;
+    
+    .currentPrice {
+        font-size: 1.5rem;
+    }
+    
+    .newsletterContainer {
+        padding: 30px 20px;
+    }
+    
+    .newsletterContent h2 {
+        font-size: 1.4rem;
+    }
+    
+    .newsletterContent p {
+        font-size: 0.9rem;
     }
     
     .timeIntervalSelector {
@@ -326,14 +231,393 @@ body {
         gap: 5px;
     }
     
-    .timeIntervalButton {
-        padding: 5px 10px;
+    .filterBtn {
+        padding: 6px 12px;
         font-size: 0.75rem;
-        flex: 1 0 auto;
     }
+    
+    .cryptoIcon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+    }
+}:root {
+    --primary-bg: #001219;
+    --secondary-bg: #0a2533;
+    --card-bg: #1a2634;
+    --accent-color: #00b3d2;
+    --text-color: #ffffff;
+    --green: #22c55e;
+    --red: #ef4444;
+    --border-color: #1e3a47;
+    
+    /* Crypto specific colors */
+    --btc-color: #f7931a;
+    --eth-color: #627eea;
+    --usdt-color: #26a17b;
+    --bnb-color: #f0b90b;
+    --sol-color: #7b5fe7;
+}
 
-    .cryptoPriceChart {
-        height: 12rem;
-        padding-left:1rem;
-    }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    min-height: 100vh;
+}
+
+/* Main container */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    color: var(--text-color);
+}
+
+/* Page header */
+.pageHeader {
+    text-align: center;
+    margin-bottom: 30px;
+    animation: fadeIn 0.5s ease;
+}
+
+.pageTitle {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.pageSubtitle {
+    font-size: 1.1rem;
+    color: #a8b3cf;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Search container */
+.searchContainer {
+    display: flex;
+    margin-bottom: 30px;
+    position: relative;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.searchInput {
+    flex: 1;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background-color: var(--secondary-bg);
+    box-shadow: 0 0 0 2px rgba(0, 179, 210, 0.2);
+}
+
+.searchButton {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--accent-color);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* Category filters */
+.filtersContainer {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.categoryFilters, .timeFilters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filterBtn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filterBtn:hover {
+    background-color: rgba(0, 179, 210, 0.2);
+}
+
+.filterBtn.active {
+    background-color: var(--accent-color);
+    color: #000;
+    border-color: var(--accent-color);
+    font-weight: 600;
+}
+
+.timeFilter {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+}
+
+/* Featured cryptocurrency */
+.featuredCrypto {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    margin-bottom: 40px;
+    animation: fadeIn 0.5s ease;
+}
+
+.featuredContent {
+    padding: 25px;
+}
+
+.featuredHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.cryptoIcon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 1.5rem;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.cryptoInfo {
+    flex-grow: 1;
+}
+
+.cryptoInfo h2 {
+    font-size: 1.8rem;
+    margin: 0 0 5px 0;
+}
+
+.symbolLabel {
+    font-size: 1.2rem;
+    opacity: 0.7;
+}
+
+.cryptoMeta {
+    display: flex;
+    gap: 20px;
+    color: #a8b3cf;
+    font-size: 0.9rem;
+}
+
+.priceInfo {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.currentPrice {
+    font-size: 2.2rem;
+    font-weight: 700;
+}
+
+.priceChange {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.positive {
+    color: var(--green);
+}
+
+.negative {
+    color: var(--red);
+}
+
+.chartContainer {
+    margin-bottom: 20px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.tradingButtons {
+    display: flex;
+    gap: 15px;
+}
+
+.sellButton, .buyButton {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    text-decoration: none;
+    color: white;
+    font-weight: 700;
+}
+
+.sellButton{
+    background-color: var(--red);
+  }
+  
+.buyButton{
+    background: var(--green);
+}
+
+
+.buyButton:hover, .sellButton:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Grid of cryptocurrencies */
+.cryptoGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.cryptoCard {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeIn 0.5s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    opacity: 0.95;
+}
+
+.cryptoCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+    opacity: 1;
+}
+
+.cryptoHeader {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.cryptoDetails {
+    flex-grow: 1;
+    margin-left: 15px;
+}
+
+.cryptoName {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.cryptoSymbol {
+    font-size: 0.9rem;
+    color: #a8b3cf;
+}
+
+.cryptoPriceInfo {
+    text-align: right;
+}
+
+.cryptoPrice {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.cryptoPriceChange {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.cryptoChart {
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.1);
+    transition: height 0.3s ease;
+}
+
+.cryptoFooter {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+}
+
+.cryptoStats {
+    display: flex;
+    gap: 20px;
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+}
+
+.statLabel {
+    font-size: 0.8rem;
+    color: #a8b3cf;
+    margin-bottom: 5px;
+}
+
+.statValue {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.tradeButton {
+    padding: 8px 16px;
+    background-color: var(--accent-color);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tradeButton:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }

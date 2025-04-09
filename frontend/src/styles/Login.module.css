@@ -1,0 +1,134 @@
+.loginPage {
+  min-height: 100vh;
+  background-color: #0c1219;
+  color: white;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('../assets/home_bg.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.loginContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 20px;
+}
+
+.loginFormWrapper {
+  width: 100%;
+  max-width: 400px;
+  padding: 30px;
+  background-color: rgba(18, 28, 38, 0.95);
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.loginFormWrapper h2 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  text-align: center;
+}
+
+.loginSubtitle {
+  margin: 0 0 25px 0;
+  font-size: 14px;
+  color: #b0b0b0;
+  text-align: center;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.formGroup input {
+  padding: 12px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 14px;
+}
+
+.formGroup input::placeholder {
+  color: #8a8a8a;
+}
+
+.formOptions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.rememberMe {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.forgotPassword {
+  color: #13d7da;
+  text-decoration: none;
+}
+
+.forgotPassword:hover {
+  text-decoration: underline;
+}
+
+.loginButton {
+  padding: 12px;
+  border-radius: 5px;
+  background-color: #13d7da;
+  color: white;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.loginButton:hover {
+  background-color: #13d7da;
+}
+
+.loginFooter {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.loginFooter a {
+  color: #13d7da;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.loginFooter a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .loginFormWrapper {
+    padding: 20px;
+  }
+
+  .formOptions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}

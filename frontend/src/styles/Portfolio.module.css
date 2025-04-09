@@ -1,0 +1,657 @@
+/* ======================================================
+   Portfolio.module.css
+   Stiluri pentru componenta Portfolio
+   ====================================================== */
+
+/* ------------------------------------------------------
+   1. Variabile & Paletă de culori
+   ------------------------------------------------------ */
+   :root {
+    --primary-color: #1a2634;
+    --secondary-color: #0dcaf0;
+    --bg-primary: #0a1218;
+    --bg-secondary: #1a2634;
+    --bg-hover: #14375e;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --success-color: #00c853;
+    --danger-color: #ff5252;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-radius: 8px;
+    --card-max-height: 350px; /* Adăugat pentru înălțimea maximă a cardurilor */
+  }
+  
+  /* ------------------------------------------------------
+      2. Stiluri de bază
+     ------------------------------------------------------ */
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+    
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+    
+  /* Flexible content adjustments */
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    max-width: 100%;
+  }
+  
+  /* ------------------------------------------------------
+     3. Layout & Grid System
+     ------------------------------------------------------ */
+  .container {
+    max-width: 1200px;
+    width: 100%;
+    margin: 30px auto;
+    padding: 0 20px;
+  }
+    
+  /* Dashboard Grid Layout */
+  .dashboardContainer {
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+    
+  .dashboardGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 100%;
+  }
+    
+  @media (min-width: 768px) {
+    .dashboardGrid {
+      grid-template-columns: 3fr 2fr;
+    }
+  }
+    
+  @media (min-width: 1200px) {
+    .dashboardGrid {
+      grid-template-columns: 2fr 1fr 1fr;
+    }
+  }
+    
+  .mainColumn, .statsColumn, .sideColumn {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  /* ------------------------------------------------------
+     4. Tipografie
+     ------------------------------------------------------ */
+  .h1, .h2, .h3, .h4, .h5, .h6 {
+    margin: 0;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+    
+  .h1 {
+    font-size: 28px;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+    
+  .h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: var(--secondary-color);
+  }
+    
+  .h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  
+  /* ------------------------------------------------------
+     5. Clase utilitare
+     ------------------------------------------------------ */
+  .textSuccess {
+    color: var(--success-color);
+  }
+    
+  .textDanger {
+    color: var(--danger-color);
+  }
+    
+  .textSecondary {
+    color: var(--text-secondary);
+  }
+    
+  .textRight {
+    text-align: right;
+  }
+    
+  .flexBetween {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+    
+  .flexCenter {
+    display: flex;
+    align-items: center;
+  }
+  
+  /* ------------------------------------------------------
+     6. Componente
+     ------------------------------------------------------ */
+  
+  /* 6.1 Cards */
+  .card {
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+    
+  .cardHeader {
+    padding: 20px 20px 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    flex-shrink: 0; /* Împiedică header-ul să se micșoreze */
+  }
+    
+  .cardHeader h2, .cardHeader h3 {
+    margin: 0;
+  }
+    
+  .cardBody {
+    flex: 1;
+    overflow-y: auto; /* Adăugat scrollbar vertical pentru toate cardurile */
+    padding: 0 20px 20px 20px;
+    max-height: var(--card-max-height); /* Înălțime maximă pentru carduri */
+  }
+  
+  /* 6.2 Butoane */
+  .btn {
+    display: inline-block;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+    
+  .btnPrimary {
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+    
+  .btnPrimary:hover {
+    background-color: #0ab8db;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+    
+  .btnPrimary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+    
+  .btnFilter {
+    padding: 5px 15px;
+    border-radius: 20px;
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 10px;
+    font-size: 14px;
+  }
+    
+  .btnFilter:last-child {
+    margin-right: 0;
+  }
+    
+  .btnFilter.active {
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    border-color: var(--secondary-color);
+    font-weight: 600;
+  }
+  
+  /* Butoane acțiuni rapide */
+  .quickActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 0;
+  }
+    
+  .btnAction {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+  }
+    
+  .btnAction:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(13, 202, 240, 0.5);
+    color: rgba(13, 202, 240, 0.8);
+  }
+    
+  .actionIcon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* 6.3 Tabele */
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+    
+  .th, .td {
+    padding: 10px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-bottom: 1px solid var(--border-color);
+  }
+    
+  .th {
+    font-weight: 600;
+    color: var(--secondary-color);
+  }
+    
+  tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+    
+  tr:last-child .td {
+    border-bottom: none;
+  }
+  
+  /* Iconițe pentru active */
+  .assetIcon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    font-weight: 600;
+    color: white;
+  }
+    
+  .assetSymbol {
+    font-weight: 500;
+  }
+  
+  .portfolioSummary {
+    background: linear-gradient(to right, var(--bg-secondary), var(--bg-hover));
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+  }
+    
+  .summaryContent {
+    margin-top: 15px;
+  }
+    
+  .portfolioTotal {
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 5px;
+  }
+    
+  .portfolioChange {
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: 5px;
+  }
+  
+  /* Card tranzacții */
+  .transactionsCard {
+    margin-bottom: 20px;
+  }
+    
+  .transactionsTable {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  /* 6.5 Grafice și vizualizări de date */
+  /* Pie Chart */
+  .allocationChart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 0;
+    overflow: visible !important;
+  }
+  
+  .pieChartContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 220px;
+    margin: 0;
+    position: relative;
+    overflow: visible;
+  }
+    
+  .pieChart {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    position: relative;
+    background-color: transparent;
+    /* Înlătură orice stil care ar putea interfera cu stilurile inline */
+  }
+    
+  .legend {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 0 10px;
+  }
+    
+  .legendItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+    
+  .colorIndicator {
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-right: 0.5rem;
+    border-radius: 2px;
+  }
+  
+  /* 6.6 Bare de progres */
+  .progressContainer {
+    margin-bottom: 15px;
+  }
+    
+  .progressLabel {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 14px;
+  }
+    
+  .progressBar {
+    height: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 0.25rem;
+    overflow: hidden;
+  }
+    
+  .progressFill {
+    height: 100%;
+    border-radius: 0.25rem;
+    transition: width 0.3s ease;
+  }
+    
+  .progressFillSuccess {
+    background-color: var(--success-color);
+  }
+    
+  .progressFillDanger {
+    background-color: var(--danger-color);
+  }
+  
+  /* Top Performeri */
+  .topPerformer {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+    
+  .topPerformer:last-child {
+    border-bottom: none;
+  }
+  
+  /* 6.7 Alerte */
+  .alert {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+    
+  .alert:last-child {
+    border-bottom: none;
+  }
+    
+  .alertDot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    margin-top: 0.25rem;
+  }
+    
+  .alertDotSuccess {
+    background-color: var(--success-color);
+  }
+    
+  .alertDotDanger {
+    background-color: var(--danger-color);
+  }
+    
+  .alertContent {
+    flex: 1;
+  }
+    
+  .alertTitle {
+    font-weight: 500;
+    margin-bottom: 5px;
+  }
+    
+  .alertTime {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  
+  /* ------------------------------------------------------
+     7. Stiluri pentru scrollbar
+     ------------------------------------------------------ */
+  .cardBody::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+    
+  .cardBody::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+  }
+    
+  .cardBody::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+    
+  .cardBody::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+  }
+  
+  /* ------------------------------------------------------
+     8. Ajustări responsive
+     ------------------------------------------------------ */
+  /* Stiluri speciale pentru tabelul de active */
+  .assetsTable {
+    max-height: 350px;
+    overflow-y: auto;
+  }
+  
+  /* Stiluri speciale pentru alocarea activelor */
+  .allocationChart {
+    max-height: none;
+    overflow: visible !important;
+  }
+  
+  /* Filtere pentru card-uri */
+  .filterButtons {
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Ecrane medii (< 768px) */
+  @media (max-width: 767px) {
+    .container {
+      padding: 0 15px;
+    }
+    
+    .cardHeader {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .cardHeader button, 
+    .cardHeader .filterButtons {
+      margin-top: 10px;
+      width: 100%;
+    }
+    
+    .filterButtons {
+      display: flex;
+      justify-content: space-between;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding-bottom: 5px;
+      width: 100%;
+    }
+    
+    .table {
+      font-size: 14px;
+    }
+    
+    .th, .td {
+      padding: 8px 5px;
+    }
+    
+    .assetIcon {
+      width: 1.5rem;
+      height: 1.5rem;
+      font-size: 0.75rem;
+    }
+    
+    .h1 {
+      font-size: 24px;
+    }
+    
+    .h2 {
+      font-size: 18px;
+    }
+    
+    .h3 {
+      font-size: 16px;
+    }
+    
+    .portfolioTotal {
+      font-size: 28px;
+    }
+    
+    .portfolioChange {
+      font-size: 16px;
+    }
+  
+    /* Ajustări specifice pentru tabelul de active */
+    .assetsTable .th:nth-child(2),
+    .assetsTable .td:nth-child(2) {
+      display: none;
+    }
+  }
+  
+  /* Ecrane foarte mici (< 400px) */
+  @media (max-width: 400px) {
+    .assetsTable .th:nth-child(4),
+    .assetsTable .td:nth-child(4),
+    .assetsTable .th:nth-child(5),
+    .assetsTable .td:nth-child(5) {
+      display: none;
+    }
+  }
+  
+  /* Ecrane mici (< 480px) */
+  @media (max-width: 480px) {
+    .pieChart {
+      width: 140px;
+      height: 140px;
+    }
+    
+    .pieChartContainer {
+      height: 180px;
+    }
+    
+    .quickActions {
+      grid-template-columns: 1fr;
+    }
+    
+    .filterButtons {
+      flex-wrap: wrap;
+    }
+    
+    .btnFilter {
+      margin-bottom: 5px;
+      flex: 1 0 30%;
+      padding: 5px 10px;
+      font-size: 12px;
+      margin-right: 5px;
+    }
+    
+    .assetIcon {
+      width: 1.25rem;
+      height: 1.25rem;
+      font-size: 0.6rem;
+      margin-right: 5px;
+    }
+    
+    .textSecondary {
+      font-size: 12px;
+    }
+    
+    .th, .td {
+      padding: 6px 4px;
+      font-size: 12px;
+    }
+    
+    .assetSymbol {
+      font-size: 12px;
+    }
+    
+    .portfolioSummary {
+      padding: 15px;
+    }
+  }

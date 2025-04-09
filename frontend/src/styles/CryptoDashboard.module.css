@@ -1,0 +1,417 @@
+/* ======================================================
+   CryptoDashboard.module.css
+   Styles for CryptoDashboard component that integrates with Homepage
+   ====================================================== */
+
+/* ------------------------------------------------------
+   1. Variables & Color Palette
+   ------------------------------------------------------ */
+   :root {
+    --primary-color: #1a2634;
+    --secondary-color: #0dcaf0;
+    --bg-primary: #0a1218;
+    --bg-secondary: #1a2634;
+    --bg-hover: #14375e;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --success-color: #00c853;
+    --danger-color: #ff5252;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-radius: 8px;
+    --card-max-height: 350px;
+  }
+  
+  /* ------------------------------------------------------
+     2. Crypto Dashboard Main Container
+     ------------------------------------------------------ */
+  .cryptoDashboard {
+    background-color: rgba(10, 18, 24, 0.6); /* Semi-transparent to match homepage style */
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+      Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    position: relative;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease, box-shadow 0.3s ease;
+    width: 50%;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    padding: 22px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .cryptoDashboard.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .cryptoDashboard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* ------------------------------------------------------
+     3. Section Styling
+     ------------------------------------------------------ */
+  .cryptoSection, .newsSection {
+    background-color: rgba(26, 38, 52, 0.8); /* Semi-transparent card background */
+    border-radius: var(--border-radius);
+    padding: 18px;
+    margin-bottom: 22px;
+    border: 1px solid var(--border-color);
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .cryptoSection:hover, .newsSection:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* ------------------------------------------------------
+     4. Section Headers
+     ------------------------------------------------------ */
+  .sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  /* ------------------------------------------------------
+     5. Tab Container and Buttons
+     ------------------------------------------------------ */
+  .tabContainer {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .tabButton {
+    padding: 8px 15px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+    position: relative;
+  }
+  
+  .tabButton.active {
+    color: var(--secondary-color);
+    font-weight: 600;
+  }
+  
+  .tabButton.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--secondary-color);
+    opacity: 0.8;
+  }
+  
+  .tabButton.inactive {
+    color: var(--text-secondary);
+  }
+  
+  .viewAllButton {
+    color: var(--secondary-color);
+    font-size: 12px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-weight: 600;
+  }
+  
+  .viewAllButton:hover {
+    text-decoration: underline;
+  }
+  
+  /* ------------------------------------------------------
+     6. Crypto List and Items
+     ------------------------------------------------------ */
+  .cryptoList {
+    margin-top: 15px;
+    overflow-y: auto;
+    max-height: 280px; /* Increased height for more content */
+  }
+  
+  /* Scrollbar styling */
+  .cryptoList::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .cryptoList::-webkit-scrollbar-track {
+    background: rgba(10, 18, 24, 0.3);
+  }
+  
+  .cryptoList::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .cryptoList::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+  }
+  
+  .cryptoItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  
+  .cryptoItem:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+  
+  .cryptoItem.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .cryptoItem:last-child {
+    border-bottom: none;
+  }
+  
+  /* ------------------------------------------------------
+     7. Crypto Icon and Info
+     ------------------------------------------------------ */
+  .cryptoInfo {
+    display: flex;
+    align-items: center;
+  }
+  
+  .cryptoIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    margin-right: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .iconSymbol {
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+  }
+  
+  .cryptoName {
+    font-weight: 600;
+    font-size: 16px;
+    display: block;
+  }
+  
+  .cryptoFullname {
+    color: var(--text-secondary);
+    margin-left: 0;
+    font-size: 13px;
+    display: block;
+  }
+  
+  /* ------------------------------------------------------
+     8. Price Container
+     ------------------------------------------------------ */
+  .priceContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  
+  .cryptoPrice {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  
+  .priceUp {
+    color: var(--success-color);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  
+  .priceDown {
+    color: var(--danger-color);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  
+  /* ------------------------------------------------------
+     9. News Section
+     ------------------------------------------------------ */
+  .newsSection {
+    background-color: rgba(26, 38, 52, 0.8);
+    min-height: auto;
+    max-height: none;
+  }
+  
+  .newsTitle {
+    color: var(--secondary-color);
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.3px;
+  }
+  
+  .newsList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+    overflow-y: auto;
+    max-height: 230px; /* Increased height for more content */
+  }
+  
+  /* Scrollbar styling for news list */
+  .newsList::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .newsList::-webkit-scrollbar-track {
+    background: rgba(10, 18, 24, 0.3);
+  }
+  
+  .newsList::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .newsList::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+  }
+  
+  .newsItem {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    border-radius: 4px;
+  }
+  
+  .newsItem:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .newsItem.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .newsItem:last-child {
+    border-bottom: none;
+  }
+  
+  .newsItem p {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  /* ------------------------------------------------------
+     10. Responsive Adjustments
+     ------------------------------------------------------ */
+  @media (max-width: 1024px) {
+    .cryptoDashboard {
+      width: 100%;
+      margin-top: 0;
+    }
+    
+    .cryptoSection, .newsSection {
+      padding: 15px;
+    }
+    
+    .cryptoList, .newsList {
+      max-height: 300px; /* Increase height on mobile since it's full width */
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .tabContainer {
+      gap: 10px;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding-bottom: 5px;
+      width: 100%;
+    }
+    
+    .cryptoItem {
+      padding: 8px 0;
+    }
+    
+    .cryptoIcon {
+      width: 35px;
+      height: 35px;
+    }
+    
+    .viewAllButton {
+      font-size: 12px;
+    }
+    
+    .sectionHeader {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .sectionHeader button {
+      margin-top: 10px;
+      width: 100%;
+    }
+    
+    .tabButton {
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .tabButton {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    
+    .cryptoIcon {
+      width: 30px;
+      height: 30px;
+    }
+    
+    .iconSymbol {
+      font-size: 14px;
+    }
+    
+    .cryptoName {
+      font-size: 13px;
+    }
+    
+    .cryptoFullname {
+      font-size: 11px;
+    }
+    
+    .cryptoPrice {
+      font-size: 13px;
+    }
+    
+    .priceUp, .priceDown {
+      font-size: 11px;
+    }
+  }

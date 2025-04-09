@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../styles/Login.css';
+import styles from '../styles/Login.module.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -12,14 +12,14 @@ const Login = () => {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-container">
-        <div className="login-form-wrapper">
+    <div className={styles.loginPage}>
+      <div className={styles.loginContainer}>
+        <div className={styles.loginFormWrapper}>
           <h2>Conectează-te la contul tău</h2>
-          <p className="login-subtitle">Accesează-ți portofoliul și continuă să tranzacționezi</p>
+          <p className={styles.loginSubtitle}>Accesează-ți portofoliul și continuă să tranzacționezi</p>
           
-          <form className="login-form" onSubmit={handleSubmit}>
-            <div className="form-group">
+          <form className={styles.loginForm} onSubmit={handleSubmit}>
+            <div className={styles.formGroup}>
               <label htmlFor="email">Email</label>
               <input
                 type="email"
@@ -31,7 +31,7 @@ const Login = () => {
               />
             </div>
             
-            <div className="form-group">
+            <div className={styles.formGroup}>
               <label htmlFor="password">Parolă</label>
               <input
                 type="password"
@@ -43,8 +43,8 @@ const Login = () => {
               />
             </div>
             
-            <div className="form-options">
-              <div className="remember-me">
+            <div className={styles.formOptions}>
+              <div className={styles.rememberMe}>
                 <input
                   type="checkbox"
                   id="remember"
@@ -53,15 +53,15 @@ const Login = () => {
                 />
                 <label htmlFor="remember">Ține-mă minte</label>
               </div>
-              <a href="/forgot-password" className="forgot-password">Ai uitat parola?</a>
+              <a href="/forgot-password" className={styles.forgotPassword}>Ai uitat parola?</a>
             </div>
             
-            <button type="submit" className="login-button">
+            <button type="submit" className={styles.loginButton}>
               Conectează-te
             </button>
           </form>
           
-          <div className="login-footer">
+          <div className={styles.loginFooter}>
             <p>Nu ai un cont? <a href="/signup">Înregistrează-te</a></p>
           </div>
         </div>
