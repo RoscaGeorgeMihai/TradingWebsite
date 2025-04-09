@@ -12,6 +12,14 @@ const HomePage = () => {
     { id: 'sol', symbol: 'SOL', name: 'Solana', price: '$124.84', change: '+0.43%', isPositive: true, iconColorHex: '#9b59b6', iconSymbol: 'S' }
   ];
   
+  const newListings = [
+    { id: 'sui', symbol: 'SUI', name: 'Sui Network', price: '$1.45', change: '+5.67%', isPositive: true, iconColorHex: '#27ae60', iconSymbol: 'S' },
+    { id: 'dydx', symbol: 'DYDX', name: 'dYdX', price: '$3.89', change: '+12.3%', isPositive: true, iconColorHex: '#8e44ad', iconSymbol: 'D' },
+    { id: 'arb', symbol: 'ARB', name: 'Arbitrum', price: '$1.17', change: '+8.25%', isPositive: true, iconColorHex: '#2980b9', iconSymbol: 'A' },
+    { id: 'ton', symbol: 'TON', name: 'Toncoin', price: '$5.72', change: '+4.16%', isPositive: true, iconColorHex: '#16a085', iconSymbol: 'T' },
+    { id: 'sei', symbol: 'SEI', name: 'Sei Network', price: '$0.87', change: '+15.21%', isPositive: true, iconColorHex: '#c0392b', iconSymbol: 'S' }
+  ];
+  
   const news = [
     { id: 1, title: 'Solana Governance Proposal Achieves Record Voting Participation' },
     { id: 2, title: 'Bitcoin Symbol Featured in Austin Drone Show' },
@@ -31,7 +39,11 @@ const HomePage = () => {
           </h1>
         </div>
         
-        <CryptoDashboard cryptocurrencies={cryptocurrencies} news={news} />
+        <CryptoDashboard 
+          cryptocurrencies={cryptocurrencies} 
+          newListings={newListings} 
+          news={news} 
+        />
       </div>
     </div>
   );

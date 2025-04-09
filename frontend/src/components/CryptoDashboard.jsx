@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
 import styles from '../styles/CryptoDashboard.module.css';
 
-const CryptoDashboard = ({ cryptocurrencies, news }) => {
+const CryptoDashboard = ({ cryptocurrencies, newListings, news }) => {
   const [visible, setVisible] = useState(false);
   const [visibleCryptos, setVisibleCryptos] = useState([]);
   const [visibleNews, setVisibleNews] = useState([]);
+  const [activeTab, setActiveTab] = useState('popular'); // 'popular' sau 'newListing'
+  
+  // Selectează lista de criptomonede care va fi afișată bazată pe tab-ul activ
+  const displayedCryptos = activeTab === 'popular' ? cryptocurrencies : newListings;
 
   useEffect(() => {
     if (!cryptocurrencies || !news || cryptocurrencies.length === 0 || news.length === 0) {
@@ -13,37 +18,55 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
     }
     
     setVisible(true);
+    // Resetăm lista de criptomonede vizibile când se schimbă tab-ul
+    setVisibleCryptos([]);
     
-    let index = 0;
-    const cryptoInterval = setInterval(() => {
-      if (index < cryptocurrencies.length) {
-        setVisibleCryptos(prev => [...prev, cryptocurrencies[index]?.id]);
-        index++;
-      } else {
-        clearInterval(cryptoInterval);
-      }
-    }, 300);
+    const timeoutIds = [];
+    
+    // Animație pentru afișarea progresivă a criptomonedelor
+    displayedCryptos.forEach((crypto, index) => {
+      const timeoutId = setTimeout(() => {
+        setVisibleCryptos(prev => [...prev, crypto.id]);
+      }, index * 300);
+      
+      timeoutIds.push(timeoutId);
+    });
     
     setVisibleNews(news.map(item => item.id));
      
     return () => {
-      clearInterval(cryptoInterval);
+      timeoutIds.forEach(id => clearTimeout(id));
     };
-  }, [cryptocurrencies, news]);
+  }, [cryptocurrencies, news, displayedCryptos, activeTab]);
+
+  // Funcție pentru schimbarea tab-ului
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+  };
     
   return (
     <div className={`${styles.cryptoDashboard} ${visible ? styles.visible : ''}`}>
       <div className={styles.cryptoSection}>
         <div className={styles.sectionHeader}>
           <div className={styles.tabContainer}>
-            <button className={`${styles.tabButton} ${styles.active}`}>Popular</button>
-            <button className={`${styles.tabButton} ${styles.inactive}`}>New Listing</button>
+            <button 
+              className={`${styles.tabButton} ${activeTab === 'popular' ? styles.active : styles.inactive}`}
+              onClick={() => handleTabChange('popular')}
+            >
+              Popular
+            </button>
+            <button 
+              className={`${styles.tabButton} ${activeTab === 'newListing' ? styles.active : styles.inactive}`}
+              onClick={() => handleTabChange('newListing')}
+            >
+              New Listing
+            </button>
           </div>
-          <button className={styles.viewAllButton}>View All 350+ Coins &gt;</button>
+          <Link to="/crypto" className={styles.viewAllButton}>View All 350+ Coins &gt;</Link>
         </div>
         
         <div className={styles.cryptoList}>
-          {cryptocurrencies.map((crypto) => (
+          {displayedCryptos.map((crypto) => (
             <div
               key={crypto.id}
               className={`${styles.cryptoItem} ${visibleCryptos.includes(crypto.id) ? styles.visible : ''}`}
@@ -71,7 +94,7 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
       <div className={styles.newsSection}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.newsTitle}>News</h2>
-          <button className={styles.viewAllButton}>View All News &gt;</button>
+          <Link to="/news" className={styles.viewAllButton}>View All News &gt;</Link>
         </div>
         
         <div className={styles.newsList}>
@@ -102,6 +125,18 @@ CryptoDashboard.propTypes = {
       iconColorHex: PropTypes.string.isRequired,
     })
   ).isRequired,
+  newListings: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      symbol: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      price: PropTypes.string.isRequired,
+      change: PropTypes.string.isRequired,
+      isPositive: PropTypes.bool.isRequired,
+      iconSymbol: PropTypes.string.isRequired,
+      iconColorHex: PropTypes.string.isRequired,
+    })
+  ),
   news: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
@@ -112,6 +147,7 @@ CryptoDashboard.propTypes = {
 
 CryptoDashboard.defaultProps = {
   cryptocurrencies: [],
+  newListings: [],
   news: []
 };
 

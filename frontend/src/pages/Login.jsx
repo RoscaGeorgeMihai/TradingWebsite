@@ -1,22 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import styles from '../styles/Login.module.css';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../components/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
-
-  const handleSubmit = (e) => {
+  const [error, setError] = useState('');
+  
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+  
+  const handleSubmit = async e => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password, rememberMe });
+    setError('');
+    
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate('/');
+      } else {
+        setError('Login failed. Please try again.');
+      }
+    } catch(err) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    }
   };
-
+  
   return (
     <div className={styles.loginPage}>
       <div className={styles.loginContainer}>
         <div className={styles.loginFormWrapper}>
-          <h2>Conectează-te la contul tău</h2>
-          <p className={styles.loginSubtitle}>Accesează-ți portofoliul și continuă să tranzacționezi</p>
+          <h2>Log in to your account</h2>
+          <p className={styles.loginSubtitle}>Access your portfolio and continue investing</p>
+          
+          {error && <div className={styles.errorMessage}>{error}</div>}
           
           <form className={styles.loginForm} onSubmit={handleSubmit}>
             <div className={styles.formGroup}>
@@ -26,43 +45,34 @@ const Login = () => {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Introdu adresa de email"
+                placeholder="Enter your email address"
                 required
               />
             </div>
             
             <div className={styles.formGroup}>
-              <label htmlFor="password">Parolă</label>
+              <label htmlFor="password">Password</label>
               <input
                 type="password"
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Introdu parola"
+                placeholder="Enter your password"
                 required
               />
             </div>
             
             <div className={styles.formOptions}>
-              <div className={styles.rememberMe}>
-                <input
-                  type="checkbox"
-                  id="remember"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <label htmlFor="remember">Ține-mă minte</label>
-              </div>
-              <a href="/forgot-password" className={styles.forgotPassword}>Ai uitat parola?</a>
+              <a href="/forgot-password" className={styles.forgotPassword}>Forgot password?</a>
             </div>
             
             <button type="submit" className={styles.loginButton}>
-              Conectează-te
+              Log in
             </button>
           </form>
           
           <div className={styles.loginFooter}>
-            <p>Nu ai un cont? <a href="/signup">Înregistrează-te</a></p>
+            <p>Don&apos;t have an account? <a href="/signup">Sign up</a></p>
           </div>
         </div>
       </div>
