@@ -1,12 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from "../styles/Crypto.module.css";
+import { Link } from 'react-router-dom';
 
 const Crypto = () => {
     const [activeIndex, setActiveIndex] = useState(0);
     const [searchTerm, setSearchTerm] = useState('');
     const [timeInterval, setTimeInterval] = useState('1d');
+    const [activeCategory, setActiveCategory] = useState('all');
     const scrollContainerRef = useRef(null);
+
+    // Categories for coin types
+    const categories = [
+        { id: 'all', name: 'All Coins' },
+        { id: 'stable', name: 'Stablecoins' },
+        { id: 'meme', name: 'Meme Coins' }
+    ];
 
     const cryptocurrencies = [
         { 
@@ -15,6 +24,9 @@ const Crypto = () => {
             price: "68,542.30", 
             change: "+2.45%", 
             color: "#f7931a",
+            category: "l1",
+            marketCap: "$1.32T",
+            volume: "$28.7B",
             priceHistory: {
                 '1d': [
                     { name: '1d', price: 67000 },
@@ -59,6 +71,9 @@ const Crypto = () => {
             price: "3,782.15", 
             change: "+1.87%", 
             color: "#627eea",
+            category: "l1",
+            marketCap: "$452.7B",
+            volume: "$14.3B",
             priceHistory: {
                 '1d': [
                     { name: '1d', price: 3700 },
@@ -103,6 +118,9 @@ const Crypto = () => {
             price: "1.00", 
             change: "+0.01%", 
             color: "#26a17b",
+            category: "stable",
+            marketCap: "$89.2B",
+            volume: "$48.5B",
             priceHistory: {
                 '1d': [
                     { name: '1d', price: 1.0 },
@@ -147,6 +165,9 @@ const Crypto = () => {
             price: "600.75", 
             change: "+3.12%", 
             color: "#f0b90b",
+            category: "l1",
+            marketCap: "$91.7B",
+            volume: "$4.2B",
             priceHistory: {
                 '1d': [
                     { name: '1d', price: 590 },
@@ -191,6 +212,9 @@ const Crypto = () => {
             price: "178.45", 
             change: "+4.56%", 
             color: "#7b5fe7",
+            category: "l1",
+            marketCap: "$76.3B",
+            volume: "$7.1B",
             priceHistory: {
                 '1d': [
                     { name: '1d', price: 170 },
@@ -228,32 +252,84 @@ const Crypto = () => {
                     { name: 'Now', price: 178 }
                 ]
             }
+        },
+        { 
+            symbol: "DOGE", 
+            name: "Dogecoin", 
+            price: "0.12", 
+            change: "+5.67%", 
+            color: "#c2a633",
+            category: "meme",
+            marketCap: "$17.1B",
+            volume: "$2.4B",
+            priceHistory: {
+                '1d': [
+                    { name: '1d', price: 0.118 },
+                    { name: '12h', price: 0.119 },
+                    { name: '6h', price: 0.121 },
+                    { name: '3h', price: 0.122 },
+                    { name: 'Now', price: 0.12 }
+                ],
+                '1w': [
+                    { name: '7d', price: 0.115 },
+                    { name: '5d', price: 0.116 },
+                    { name: '3d', price: 0.118 },
+                    { name: '1d', price: 0.119 },
+                    { name: 'Now', price: 0.12 }
+                ],
+                '1m': [
+                    { name: '30d', price: 0.10 },
+                    { name: '20d', price: 0.105 },
+                    { name: '10d', price: 0.11 },
+                    { name: '5d', price: 0.115 },
+                    { name: 'Now', price: 0.12 }
+                ],
+                '1y': [
+                    { name: 'Jan', price: 0.08 },
+                    { name: 'Mar', price: 0.09 },
+                    { name: 'Jun', price: 0.095 },
+                    { name: 'Sep', price: 0.105 },
+                    { name: 'Now', price: 0.12 }
+                ],
+                'max': [
+                    { name: '2020', price: 0.002 },
+                    { name: '2021', price: 0.6 },
+                    { name: '2022', price: 0.15 },
+                    { name: '2023', price: 0.1 },
+                    { name: 'Now', price: 0.12 }
+                ]
+            }
         }
     ];
+
+    // Filter cryptocurrencies based on search term and category
+    const filteredCryptos = cryptocurrencies.filter(crypto => {
+        const matchesSearch = crypto.symbol.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                             crypto.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = activeCategory === 'all' || crypto.category === activeCategory;
+        return matchesSearch && matchesCategory;
+    });
 
     useEffect(() => {
         const scrollInterval = setInterval(() => {
             if (scrollContainerRef.current) {
-                const nextIndex = (activeIndex + 1) % cryptocurrencies.length;
+                const nextIndex = (activeIndex + 1) % filteredCryptos.length;
                 setActiveIndex(nextIndex);
                 
                 const scrollContainer = scrollContainerRef.current;
                 const nextElement = scrollContainer.children[nextIndex];
                 
-                nextElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    inline: 'center' 
-                });
+                if (nextElement) {
+                    nextElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        inline: 'center' 
+                    });
+                }
             }
         }, 5000);
 
         return () => clearInterval(scrollInterval);
-    }, [activeIndex, cryptocurrencies.length]);
-
-    const filteredCryptos = cryptocurrencies.filter(crypto => 
-        crypto.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        crypto.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    }, [activeIndex, filteredCryptos.length]); // Adăugăm filteredCryptos.length la array-ul de dependențe
 
     const handleTimeIntervalChange = (interval) => {
         setTimeInterval(interval);
@@ -270,98 +346,178 @@ const Crypto = () => {
     return (
         <div className={styles.container}>
             <div className={styles.pageHeader}>
-                <h1 className={styles.pageTitle}>Cryptocurrencies</h1>
-                <div className={styles.searchFilter}>
-                    <input 
-                        type="text" 
-                        className={styles.searchBox} 
-                        placeholder="Search cryptocurrencies..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <button className={styles.filterButton}>Search</button>
+                <h1 className={styles.pageTitle}>Cryptocurrency Market</h1>
+                <p className={styles.pageSubtitle}>Track real-time prices and trends of the top digital assets</p>
+            </div>
+            
+            {/* Search and filters section */}
+            <div className={styles.searchContainer}>
+                <input 
+                    type="text" 
+                    className={styles.searchInput} 
+                    placeholder="Search cryptocurrencies..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <button className={styles.searchButton}>
+                    <span className={styles.searchIcon}>🔍</span>
+                </button>
+            </div>
+            
+            {/* Category filters */}
+            <div className={styles.filtersContainer}>
+                <div className={styles.categoryFilters}>
+                    {categories.map(category => (
+                        <button 
+                            key={category.id}
+                            className={`${styles.filterBtn} ${activeCategory === category.id ? styles.active : ''}`}
+                            onClick={() => setActiveCategory(category.id)}
+                        >
+                            {category.name}
+                        </button>
+                    ))}
+                </div>
+                <div className={styles.timeFilters}>
+                    {timeIntervalOptions.map(option => (
+                        <button
+                            key={option.value}
+                            className={`${styles.filterBtn} ${styles.timeFilter} ${timeInterval === option.value ? styles.active : ''}`}
+                            onClick={() => handleTimeIntervalChange(option.value)}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
                 </div>
             </div>
             
-            <div 
-                ref={scrollContainerRef} 
-                className={styles.cryptocurrenciesScrollContainer}
-            >
-                {filteredCryptos.map((crypto, index) => (
-                    <div 
-                        key={crypto.symbol} 
-                        className={`${styles.cryptoScrollItem} ${index === activeIndex ? styles.activeCrypto : ''}`}
-                    >
-                        <div className={styles.cryptoMainInfo}>
-                            <div className={styles.stockInfo}>
-                                <div 
-                                    className={styles.stockIcon} 
-                                    style={{ backgroundColor: crypto.color }}
-                                >
-                                    {crypto.symbol[0]}
-                                </div>
-                                <div className={styles.stockDetails}>
-                                    <div className={styles.stockSymbol}>{crypto.symbol}</div>
-                                    <div className={styles.stockName}>{crypto.name}</div>
-                                </div>
+            {/* Featured cryptocurrency - show first in filtered list */}
+            {filteredCryptos.length > 0 && (
+                <div className={styles.featuredCrypto}>
+                    <div className={styles.featuredContent}>
+                        <div className={styles.featuredHeader}>
+                            <div 
+                                className={styles.cryptoIcon} 
+                                style={{ backgroundColor: filteredCryptos[0].color }}
+                            >
+                                {filteredCryptos[0].symbol[0]}
                             </div>
-                            <div className={styles.stockPrice}>
-                                <div className={styles.priceValue}>${crypto.price}</div>
-                                <div className={`${styles.priceChange} ${crypto.change.startsWith('+') ? styles.positive : styles.negative}`}>
-                                    {crypto.change}
+                            <div className={styles.cryptoInfo}>
+                                <h2>{filteredCryptos[0].name} <span className={styles.symbolLabel}>({filteredCryptos[0].symbol})</span></h2>
+                                <div className={styles.cryptoMeta}>
+                                    <span>Market Cap: {filteredCryptos[0].marketCap}</span>
+                                    <span>Volume: {filteredCryptos[0].volume}</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div className={styles.timeIntervalSelector}>
-                            {timeIntervalOptions.map(option => (
-                                <button
-                                    key={option.value}
-                                    className={`${styles.timeIntervalButton} ${timeInterval === option.value ? styles.activeTimeInterval : ''}`}
-                                    onClick={() => handleTimeIntervalChange(option.value)}
-                                >
-                                    {option.label}
-                                </button>
-                            ))}
+                        <div className={styles.priceInfo}>
+                            <div className={styles.currentPrice}>
+                                ${filteredCryptos[0].price}
+                            </div>
+                            <div className={`${styles.priceChange} ${filteredCryptos[0].change.startsWith('+') ? styles.positive : styles.negative}`}>
+                                {filteredCryptos[0].change}
+                            </div>
                         </div>
-                        
-                        <div className={styles.cryptoPriceChart}>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <LineChart data={crypto.priceHistory[timeInterval]}>
+                        <div className={styles.chartContainer}>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <LineChart data={filteredCryptos[0].priceHistory[timeInterval]}>
                                     <XAxis dataKey="name" />
                                     <YAxis hide={true} />
                                     <Tooltip />
                                     <Line 
                                         type="monotone" 
                                         dataKey="price" 
-                                        stroke={crypto.color} 
+                                        stroke={filteredCryptos[0].color} 
                                         strokeWidth={3}
+                                        dot={false}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
+                        </div>
+                        <div className={styles.tradingButtons}>
+                            <Link to={`/crypto/${filteredCryptos[0].symbol}`} className={styles.buyButton}>
+                                Buy {filteredCryptos[0].symbol}
+                            </Link>
+                            <Link to={`/crypto/${filteredCryptos[0].symbol}`} className={styles.sellButton}>
+                                Sell {filteredCryptos[0].symbol}
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* List of other cryptocurrencies */}
+            <div className={styles.cryptoGrid}>
+                {filteredCryptos.slice(1).map((crypto) => (
+                    <div key={crypto.symbol} className={styles.cryptoCard}>
+                        <div className={styles.cryptoHeader}>
+                            <div 
+                                className={styles.cryptoIcon} 
+                                style={{ backgroundColor: crypto.color }}
+                            >
+                                {crypto.symbol[0]}
+                            </div>
+                            <div className={styles.cryptoDetails}>
+                                <div className={styles.cryptoName}>{crypto.name}</div>
+                                <div className={styles.cryptoSymbol}>{crypto.symbol}</div>
+                            </div>
+                            <div className={styles.cryptoPriceInfo}>
+                                <div className={styles.cryptoPrice}>${crypto.price}</div>
+                                <div className={`${styles.cryptoPriceChange} ${crypto.change.startsWith('+') ? styles.positive : styles.negative}`}>
+                                    {crypto.change}
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.cryptoChart}>
+                            <ResponsiveContainer width="100%" height={120}>
+                                <LineChart data={crypto.priceHistory[timeInterval]}>
+                                    <XAxis dataKey="name" tick={false} hide />
+                                    <YAxis hide={true} />
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="price" 
+                                        stroke={crypto.color} 
+                                        strokeWidth={2}
+                                        dot={false}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className={styles.cryptoFooter}>
+                            <div className={styles.cryptoStats}>
+                                <div className={styles.statItem}>
+                                    <span className={styles.statLabel}>Market Cap</span>
+                                    <span className={styles.statValue}>{crypto.marketCap}</span>
+                                </div>
+                                <div className={styles.statItem}>
+                                    <span className={styles.statLabel}>Volume</span>
+                                    <span className={styles.statValue}>{crypto.volume}</span>
+                                </div>
+                            </div>
+                            <Link to={`/crypto/${filteredCryptos[0].symbol}`} className={styles.tradeButton}>
+                                Buy
+                            </Link>
                         </div>
                     </div>
                 ))}
             </div>
             
-            <div className={styles.cryptoIndicators}>
-                {filteredCryptos.map((crypto, index) => (
-                    <div 
-                        key={`indicator-${crypto.symbol}`}
-                        className={`${styles.cryptoIndicatorDot} ${index === activeIndex ? styles.active : ''}`}
-                        onClick={() => {
-                            setActiveIndex(index);
-                            if (scrollContainerRef.current) {
-                                const scrollContainer = scrollContainerRef.current;
-                                const element = scrollContainer.children[index];
-                                element.scrollIntoView({ 
-                                    behavior: 'smooth', 
-                                    inline: 'center' 
-                                });
-                            }
-                        }}
-                    />
-                ))}
+            {/* Show message if no cryptocurrencies match filter */}
+            {filteredCryptos.length === 0 && (
+                <div className={styles.noResults}>
+                    <p>No cryptocurrencies found matching your criteria. Try adjusting your search or filters.</p>
+                </div>
+            )}
+            
+            {/* Market overview section */}
+            <div className={styles.newsletterContainer}>
+                <div className={styles.newsletterContent}>
+                    <h2>Stay Updated on Crypto Trends</h2>
+                    <p>Subscribe to our newsletter for daily market analysis, trading signals, and crypto news.</p>
+                    <div className={styles.subscribeForm}>
+                        <input type="email" placeholder="Your email address" className={styles.emailInput} />
+                        <button className={styles.subscribeBtn}>Subscribe</button>
+                    </div>
+                </div>
             </div>
         </div>
     );

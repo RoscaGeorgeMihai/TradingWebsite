@@ -7,6 +7,14 @@
     --green: #22c55e;
     --red: #ef4444;
     --border-color: #1e3a47;
+    
+    /* Commodity specific colors */
+    --gold-color: #D4AF37;
+    --silver-color: #C0C0C0;
+    --oil-color: #264040;
+    --corn-color: #FFDD00;
+    --natgas-color: #71A6D2;
+    --copper-color: #B87333;
 }
 
 body {
@@ -18,171 +26,184 @@ body {
     min-height: 100vh;
 }
 
+/* Main container */
 .container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 20px;
+    color: var(--text-color);
 }
 
-.page-header {
+/* Page header */
+.pageHeader {
     text-align: center;
     margin-bottom: 30px;
+    animation: fadeIn 0.5s ease;
 }
 
-.page-title {
+.pageTitle {
     font-size: 2.5rem;
+    margin-bottom: 10px;
     color: var(--text-color);
-    margin-bottom: 20px;
 }
 
-.search-filter {
+.pageSubtitle {
+    font-size: 1.1rem;
+    color: #a8b3cf;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Search container */
+.searchContainer {
     display: flex;
-    justify-content: center;
-    gap: 15px;
     margin-bottom: 30px;
+    position: relative;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.search-box {
+.searchInput {
+    flex: 1;
     padding: 10px 15px;
-    width: 300px;
-    background-color: var(--secondary-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-color);
     font-size: 1rem;
-}
-
-.filter-button {
-    padding: 10px 20px;
-    background-color: var(--accent-color);
-    border: none;
     border-radius: 8px;
-    color: #000;
+    border: 1px solid var(--border-color);
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background-color: var(--secondary-bg);
+    box-shadow: 0 0 0 2px rgba(0, 179, 210, 0.2);
+}
+
+.searchButton {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--accent-color);
+    font-size: 20px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
 }
 
-.filter-button:hover {
-    opacity: 0.9;
-}
-
-.tabs {
+/* Category filters */
+.filtersContainer {
     display: flex;
     justify-content: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.categoryFilters {
+    display: flex;
     gap: 10px;
-    margin-bottom: 20px;
     flex-wrap: wrap;
 }
 
-.tab {
-    border: none;
-    padding: 10px 20px;
-    background-color: var(--secondary-bg);
-    color: var(--text-color);
+.filterBtn {
+    padding: 8px 16px;
     border-radius: 8px;
-    font: inherit;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
-    pointer-events: auto;
-    user-select: none;
-    z-index: 1;
-    position: relative;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-  }
-  
+    transition: all 0.2s ease;
+}
 
-.tab.active {
+.filterBtn:hover {
+    background-color: rgba(0, 179, 210, 0.2);
+}
+
+.filterBtn.active {
     background-color: var(--accent-color);
     color: #000;
+    border-color: var(--accent-color);
     font-weight: 600;
-  }
-
-.cryptocurrencies-scroll-container {
-    display: flex;
-    overflow-x: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    width: 100%;
-    position: relative;
 }
 
-.crypto-scroll-item {
-    flex: 0 0 100%;
-    scroll-snap-align: center;
+/* Featured commodity */
+.featuredCommodity {
     background-color: var(--card-bg);
     border-radius: 16px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.3s ease;
+    overflow: hidden;
     border: 1px solid var(--border-color);
-    width: 100%;
-    max-width: 100%;
-    opacity: 0.7;
-    transform: scale(0.95);
-}
-
-.crypto-scroll-item.active-crypto {
-    opacity: 1;
-    transform: scale(1);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    margin-bottom: 40px;
+    animation: fadeIn 0.5s ease;
 }
 
-.crypto-main-info {
+.featuredContent {
+    padding: 25px;
+}
+
+.featuredHeader {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
 }
 
-.stock-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.stock-icon {
-    width: 50px;
-    height: 50px;
+.commodityIcon {
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
     color: white;
-    font-size: 1.2rem;
-}
-
-.stock-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.stock-symbol {
-    font-size: 1.2rem;
-    font-weight: 700;
-}
-
-.stock-name {
-    font-size: 1rem;
-    color: #a8b3cf;
-}
-
-.stock-price {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-
-.price-value {
     font-size: 1.5rem;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.commodityInfo {
+    flex-grow: 1;
+}
+
+.commodityInfo h2 {
+    font-size: 1.8rem;
+    margin: 0 0 5px 0;
+}
+
+.symbolLabel {
+    font-size: 1.2rem;
+    opacity: 0.7;
+}
+
+.commodityMeta {
+    display: flex;
+    gap: 20px;
+    color: #a8b3cf;
+    font-size: 0.9rem;
+}
+
+.priceInfo {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.currentPrice {
+    font-size: 2.2rem;
     font-weight: 700;
 }
 
-.price-change {
-    font-size: 1rem;
+.priceChange {
+    font-size: 1.2rem;
     font-weight: 600;
 }
 
@@ -194,170 +215,365 @@ body {
     color: var(--red);
 }
 
-.crypto-price-chart {
-    position: relative;
-    width: 90%;
-    height: 200px;
-    max-width: 100%;
+.commodityDescription {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    color: #a8b3cf;
 }
 
-.crypto-indicators {
+.topProducers {
+    margin-bottom: 20px;
+}
+
+.topProducers h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: var(--accent-color);
+}
+
+.producersList {
     display: flex;
-    justify-content: center;
-    margin-top: 15px;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
-.crypto-indicator-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+.producerTag {
     background-color: var(--secondary-bg);
-    transition: background-color 0.3s ease;
-}
-
-.crypto-indicator-dot.active {
-    background-color: var(--accent-color);
-}
-
-.stocks-grid {
-    display: grid;
-    place-items: center; 
-    gap: 20px;
-    margin-top: 30px;
-}
-
-.market-card {
-    background-color: var(--card-bg);
-    border-radius: 16px;
-    padding: 20px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
     border: 1px solid var(--border-color);
-    width: 90%;
 }
 
-.market-header {
+.tradingButtons {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.market-name {
-    font-size: 1.3rem;
-    font-weight: 600;
-}
-
-.view-all {
-    color: var(--accent-color);
-    text-decoration: none;
-}
-
-.stocks-list {
-    display: flex;
-    flex-direction: column;
     gap: 15px;
 }
 
-.stock-item {
+.sellButton, .buyButton {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    text-decoration: none;
+    color: white;
+    font-weight: 700;
+}
+
+.buyButton{
+    background-color: var(--green);
+}
+
+.sellButton{
+    background-color: var(--red);
+}
+
+.buyButton:hover, .sellButton:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+.detailsButton {
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.tradeButton {
+    background-color: var(--accent-color);
+    color: #000;
+    border: none;
+}
+
+.detailsButton:hover, .tradeButton:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Grid of commodities */
+.commoditiesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.commodityCard {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeIn 0.5s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    opacity: 0.95;
+}
+
+.commodityCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+    opacity: 1;
+}
+
+.commodityHeader {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.commodityDetails {
+    flex-grow: 1;
+    margin-left: 15px;
+}
+
+.commodityName {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.commoditySymbol {
+    font-size: 0.9rem;
+    color: #a8b3cf;
+}
+
+.commodityPriceInfo {
+    text-align: right;
+}
+
+.commodityPrice {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.commodityPriceChange {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.commodityFooter {
+    padding: 15px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px;
-    border-radius: 12px;
-    transition: background-color 0.2s ease;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
 }
 
-.stock-item:hover {
+.commodityStats {
+    display: flex;
+    gap: 20px;
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+}
+
+.statLabel {
+    font-size: 0.8rem;
+    color: #a8b3cf;
+    margin-bottom: 5px;
+}
+
+.statValue {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.viewDetailsTag {
+    color: var(--accent-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* No results */
+.noResults {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 40px;
+}
+
+.noResults p {
+    font-size: 1.1rem;
+    color: #a8b3cf;
+}
+
+/* Newsletter section */
+.newsletterContainer {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 40px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    background-image: linear-gradient(to right, rgba(0, 179, 210, 0.1), transparent);
+}
+
+.newsletterContent {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.newsletterContent h2 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    color: var(--accent-color);
+}
+
+.newsletterContent p {
+    font-size: 1rem;
+    margin-bottom: 25px;
+    color: #a8b3cf;
+}
+
+.subscribeForm {
+    display: flex;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.emailInput {
+    flex: 1;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 8px 0 0 8px;
+    border: 1px solid var(--border-color);
+    border-right: none;
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+}
+
+.emailInput:focus {
+    outline: none;
+    border-color: var(--accent-color);
     background-color: var(--secondary-bg);
 }
 
-@media (max-width: 768px) {
-    .search-filter {
+.subscribeBtn {
+    padding: 10px 20px;
+    background-color: var(--accent-color);
+    color: #000;
+    border: none;
+    border-radius: 0 8px 8px 0;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.subscribeBtn:hover {
+    opacity: 0.9;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+    .filtersContainer {
         flex-direction: column;
         align-items: center;
     }
+}
 
-    .search-box {
+@media (max-width: 768px) {
+    .commoditiesGrid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+    
+    .featuredContent {
+        padding: 20px;
+    }
+    
+    .commodityInfo h2 {
+        font-size: 1.5rem;
+    }
+    
+    .currentPrice {
+        font-size: 1.8rem;
+    }
+    
+    .priceChange {
+        font-size: 1rem;
+    }
+    
+    .subscribeForm {
+        flex-direction: column;
+    }
+    
+    .emailInput {
+        border-radius: 8px;
+        border-right: 1px solid var(--border-color);
+        margin-bottom: 10px;
+    }
+    
+    .subscribeBtn {
+        border-radius: 8px;
         width: 100%;
-        max-width: 350px;
     }
-
-    .crypto-scroll-item {
-        padding: 15px;
-    }
-
-    .stock-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-
-    .stock-symbol {
-        font-size: 1rem;
-    }
-
-    .stock-name {
-        font-size: 0.9rem;
-    }
-
-    .price-value {
-        font-size: 1.2rem;
-    }
-
-    .price-change {
-        font-size: 0.9rem;
-    }
-
-    .crypto-price-chart {
-        height: 180px;
+    
+    .tradingButtons {
+        flex-direction: column;
     }
 }
 
-@media (max-width: 480px) {
-    .page-title {
+@media (max-width: 576px) {
+    .pageTitle {
         font-size: 1.8rem;
     }
-
-    .search-box {
-        padding: 8px 12px;
+    
+    .pageSubtitle {
         font-size: 0.9rem;
     }
-
-    .filter-button {
-        padding: 8px 16px;
-        font-size: 0.9rem;
+    
+    .commodityInfo h2 {
+        font-size: 1.3rem;
     }
-
-    .crypto-scroll-item {
-        padding: 12px;
-        border-radius: 12px;
-    }
-
-    .stock-icon {
-        width: 35px;
-        height: 35px;
-        font-size: 0.9rem;
-    }
-
-    .stock-symbol {
-        font-size: 0.95rem;
-    }
-
-    .stock-name {
-        font-size: 0.85rem;
-    }
-
-    .price-value {
+    
+    .symbolLabel {
         font-size: 1rem;
     }
-
-    .price-change {
-        font-size: 0.85rem;
+    
+    .currentPrice {
+        font-size: 1.5rem;
     }
-
-    .crypto-price-chart {
-        height: 140px;
+    
+    .newsletterContainer {
+        padding: 30px 20px;
+    }
+    
+    .newsletterContent h2 {
+        font-size: 1.4rem;
+    }
+    
+    .newsletterContent p {
+        font-size: 0.9rem;
+    }
+    
+    .commodityIcon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
     }
 }

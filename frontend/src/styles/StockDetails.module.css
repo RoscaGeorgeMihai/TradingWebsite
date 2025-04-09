@@ -1,0 +1,767 @@
+/* Variabile CSS pentru schema de culori */
+:root {
+  --primary-color: #1a2634;
+  --secondary-color: #0dcaf0;
+  --dark-bg: #0a1218;
+  --card-bg: #1a2634;
+  --text-color: #ffffff;
+  --positive: #00c853;
+  --negative: #ff5252;
+  --border-radius: 8px;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  background-color: var(--dark-bg);
+  color: var(--text-color);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Container principal */
+.container {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+/* Loading state */
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  font-size: 18px;
+  color: var(--secondary-color);
+}
+
+/* Header stock */
+.stockHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+.stockTitle {
+  margin-top:1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.stockSymbol {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+}
+
+.stockName h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.stockName p {
+  margin: 5px 0 0;
+  opacity: 0.8;
+}
+
+.stockPrice {
+  text-align: right;
+}
+
+.currentPrice {
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.priceChange {
+  font-size: 18px;
+  margin: 5px 0 0;
+}
+
+/* Buton de Investire */
+.btnInvest {
+  padding: 10px 24px;
+  margin-top:1rem;
+  background-color: var(--positive);  /* Culoare verde definită la începutul CSS-ului */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btnInvest:hover {
+  background-color: #00a844;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btnInvest:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.positive {
+  color: var(--positive);
+}
+
+.negative {
+  color: var(--negative);
+}
+
+/* Taburi */
+.stockTabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+  text-decoration: none;
+}  
+
+.tab:hover {
+  color: rgba(13, 202, 240, 0.7);
+}
+
+.tab.active {
+  font-weight: 600;
+  color: var(--secondary-color);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--secondary-color);
+  opacity: 0.8;
+}
+
+/* Card-uri */
+.card {
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: var(--secondary-color);
+}
+
+.card h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+/* Layout modificat pentru 'Privire generală' */
+.overviewLayout {
+  display: flex;
+  gap: 20px;
+  height: 650px; /* Înălțime fixă pentru întregul layout */
+}
+
+/* Partea stângă cu graficul mare */
+.largeChartContainer {
+  flex: 3; /* Ocupă 75% din spațiu */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Partea dreaptă cu rezumat și știri */
+.sidebarContainer {
+  flex: 1; /* Ocupă 25% din spațiu */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sidebarContainer .card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.sidebarContainer .card:first-child {
+  margin-bottom: 20px;
+}
+
+/* Layout pe coloane */
+.row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.row > div {
+  flex: 1;
+}
+
+/* Rezumat */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Modificat pentru a afișa în două coloane */
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.summaryItem .label {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 5px;
+}
+
+.summaryItem .value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Placeholder pentru grafice */
+.placeholderChart {
+  background-color: rgba(0, 0, 0, 0.2);
+  height: 450px;
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+.miniChartContainer {
+  height: 150px;
+  margin-bottom: 15px;
+}
+
+.chartContainer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 70px;
+}
+
+/* Modificare pentru a face graficul de înălțime egală cu sidebar-ul */
+.largeChartContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.largeChartContainer .chartContainer {
+  flex-grow: 1;
+}
+
+/* Filtre de timp pentru grafic */
+.chartToolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.timeFilters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap; /* Permite înfășurarea pe dispozitive mici */
+}
+
+.filterBtn {
+  padding: 5px 15px;
+  border-radius: 20px;
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.filterBtn.active {
+  background-color: rgba(13, 202, 240, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(13, 202, 240, 0.6);
+  font-weight: 500;
+}
+
+.filterBtn.active {
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  border-color: var(--secondary-color);
+  font-weight: 600;
+}
+
+.chartTools {
+  display: flex;
+  gap: 10px;
+}
+
+.btnIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.btnIcon:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Butoane */
+.btnOutline {
+  padding: 8px 20px;
+  border-radius: var(--border-radius);
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  display: block;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+}
+
+
+.btnOutline:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(13, 202, 240, 0.5); /* Mai subțire culoarea */
+  color: rgba(13, 202, 240, 0.8); /* Mai subțire culoarea */
+}
+
+
+/* Știri */
+.newsList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.newsItem {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
+}
+
+.newsItem:last-child {
+  border-bottom: none;
+}
+
+.newsItem h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.newsMeta {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 10px;
+}
+
+.newsSnippet {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.newsLink {
+  color: var(--secondary-color);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.newsLink:hover {
+  text-decoration: underline;
+}
+
+.newsList.preview .newsSnippet,
+.newsList.preview .newsLink {
+  display: none;
+}
+
+/* Tabele financiare */
+.financialsOverview {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.financialChart {
+  flex: 1;
+}
+
+.financialTable {
+  flex: 1;
+}
+
+.epsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.epsChart {
+  flex: 1;
+}
+
+.epsTable {
+  flex: 1;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+th {
+  font-weight: 600;
+  color: var(--secondary-color);
+}
+
+/* Secțiunea de analiză */
+.analystRecommendations {
+  margin-bottom: 30px;
+}
+
+.recommendationSummary {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.recommendationScore {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.score {
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--secondary-color);
+}
+
+.scoreLabel {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.recommendationText {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.recommendationBreakdown {
+  margin-top: 20px;
+}
+
+.recommendationBar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.recommendationBar .label {
+  width: 150px;
+  font-size: 14px;
+}
+
+.barContainer {
+  flex: 1;
+  height: 25px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: var(--border-radius);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.bar {
+  height: 100%;
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
+}
+
+.percentage {
+  position: absolute;
+  right: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Obiective de preț */
+.priceTargets {
+  padding: 10px 0;
+}
+
+.priceRange {
+  margin-bottom: 20px;
+}
+
+.rangeContainer {
+  position: relative;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: 30px 0;
+  border-radius: 2px;
+}
+
+.rangeBar {
+  position: absolute;
+  top: 0;
+  left: 20%;
+  width: 60%;
+  height: 100%;
+  background-color: var(--secondary-color);
+}
+
+.currentMarker {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  border: 2px solid var(--secondary-color);
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.lowPrice, .highPrice {
+  position: absolute;
+  top: -25px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lowPrice {
+  left: 0;
+}
+
+.highPrice {
+  right: 0;
+}
+
+.currentPriceIndicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  margin-top: 15px;
+}
+
+.currentPriceIndicator .label {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 5px;
+}
+
+.currentPriceIndicator .value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.targetSummary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.targetItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.targetItem .label {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 5px;
+}
+
+.targetItem .value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Implementare pentru grafic interactiv */
+.chartTooltip {
+  background-color: var(--primary-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 10px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.chartTooltip p {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+.chartTooltip .tooltipDate {
+  font-weight: 600;
+  color: var(--secondary-color);
+}
+
+.chartTooltip .tooltipValue {
+  font-weight: 600;
+}
+
+/* Animații */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.tabContent > div {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Responsive pentru noul layout */
+@media (max-width: 992px) {
+
+  .overviewLayout {
+    height: auto;
+    flex-direction: column;
+  }
+  
+  .largeChartContainer,
+  .sidebarContainer {
+    flex: none;
+    width: 100%;
+    height: auto;
+  }
+  
+  .largeChartContainer .chartContainer {
+    height: 400px;
+  }
+  
+  .sidebarContainer .card {
+    flex: none;
+    margin-bottom: 20px !important;
+  }
+  
+  .targetSummary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .financialsOverview, .epsContainer {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .stockTitle{
+    margin-top: 0;
+  }
+  .row {
+    flex-direction: column;
+  }
+  
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stockHeader {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 15px;
+  }
+  
+  .stockPrice {
+    text-align: center;
+  }
+  
+  .stockTabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 5px;
+    width: 100%;
+  }
+  
+  .tabInvest {
+    margin-left: 0;
+  }
+  
+  .recommendationBar .label {
+    width: 120px;
+  }
+}
+
+@media (max-width: 576px) {
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .targetSummary {
+    grid-template-columns: 1fr;
+  }
+  
+  .currentPrice {
+    font-size: 28px;
+  }
+  
+  .card {
+    padding: 15px;
+  }
+  
+  .recommendationBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .recommendationBar .label {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+}

@@ -1,0 +1,488 @@
+:root {
+    --primary-bg: #001219;
+    --secondary-bg: #0a2533;
+    --card-bg: #0e2c3b;
+    --accent-color: #00b3d2;
+    --text-color: #ffffff;
+    --green: #22c55e;
+    --red: #ef4444;
+    --border-color: #1e3a47;
+    --input-bg: #132c39;
+    --form-bg: #0c1f29;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image:
+      linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+      url('../assets/home_bg.jpg');
+    color: var(--text-color);
+    min-height: 100vh;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+/* Main container */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    color: var(--text-color);
+    background-color: transparent;
+}
+
+/* Page header */
+.pageHeader {
+    text-align: center;
+    margin-bottom: 30px;
+    animation: fadeIn 0.5s ease;
+}
+
+.pageTitle {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.pageSubtitle {
+    font-size: 1.1rem;
+    color: #a8b3cf;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Overview cards */
+.overviewCards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.cardIcon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background-color: rgba(0, 179, 210, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    color: var(--accent-color);
+}
+
+.cardContent {
+    flex: 1;
+}
+
+.cardContent h2 {
+    font-size: 1.2rem;
+    margin: 0 0 5px 0;
+    color: #a8b3cf;
+}
+
+.cardValue {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-color);
+}
+
+/* Main content layout */
+.mainContent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+/* Form section */
+.formSection {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.formHeader {
+    padding: 0 25px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.formTabs {
+    display: flex;
+    margin: 0 -5px;
+}
+
+.formTab {
+    padding: 20px;
+    background-color: transparent;
+    border: none;
+    color: #a8b3cf;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+    flex: 1;
+}
+
+.formTab:hover {
+    color: var(--text-color);
+}
+
+.formTab.active {
+    color: var(--accent-color);
+    border-bottom: 3px solid var(--accent-color);
+}
+
+.depositForm {
+    padding: 25px;
+}
+
+.formGroup {
+    margin-bottom: 20px;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #a8b3cf;
+}
+
+.formGroup input {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 1rem;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.formGroup input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(0, 179, 210, 0.2);
+}
+
+.formGroup input::placeholder {
+    color: rgba(168, 179, 207, 0.5);
+}
+
+.formGroup input:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.inputWithIcon {
+    position: relative;
+}
+
+.dollarSign {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a8b3cf;
+}
+
+.inputWithIcon input {
+    padding-left: 30px;
+}
+
+.formRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.submitButton {
+    width: 100%;
+    padding: 14px;
+    background-color: var(--accent-color);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 10px;
+}
+
+.submitButton:hover {
+    opacity: 0.9;
+}
+
+.submitButton:disabled {
+    background-color: rgba(0, 179, 210, 0.5);
+    cursor: not-allowed;
+}
+
+.successMessage {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: rgba(34, 197, 94, 0.1);
+    color: var(--green);
+    border-radius: 8px;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.secureNote {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+    color: #a8b3cf;
+    font-size: 0.9rem;
+}
+
+/* Transaction section */
+.transactionSection {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    padding: 25px;
+}
+
+.transactionSection h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+    color: var(--accent-color);
+}
+
+.transactionList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.transactionItem {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--input-bg);
+    border-radius: 10px;
+    transition: transform 0.2s ease;
+}
+
+.transactionItem:hover {
+    transform: translateY(-2px);
+}
+
+.transactionIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+}
+
+.transactionIcon[data-type="deposit"] {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: var(--green);
+}
+
+.transactionIcon[data-type="withdrawal"] {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--red);
+}
+
+.transactionIcon[data-type="investment"] {
+    background-color: rgba(0, 179, 210, 0.1);
+    color: var(--accent-color);
+}
+
+.transactionDetails {
+    flex: 1;
+}
+
+.transactionType {
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+
+.transactionDate {
+    font-size: 0.9rem;
+    color: #a8b3cf;
+}
+
+.transactionAmount {
+    font-weight: 600;
+    color: var(--red);
+}
+
+.transactionAmount[data-positive="true"] {
+    color: var(--green);
+}
+
+/* Investment tips section */
+.tipsSection {
+    margin-bottom: 40px;
+}
+
+.tipsSection h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.5rem;
+    color: var(--accent-color);
+}
+
+.tipsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.tipCard {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    padding: 25px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+    text-align: center;
+}
+
+.tipCard:hover {
+    transform: translateY(-5px);
+}
+
+.tipIcon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: rgba(0, 179, 210, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    color: var(--accent-color);
+}
+
+.tipCard h3 {
+    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.tipCard p {
+    font-size: 0.95rem;
+    color: #a8b3cf;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+    .mainContent {
+        grid-template-columns: 1fr;
+    }
+    
+    .formSection, .transactionSection {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .overviewCards {
+        grid-template-columns: 1fr;
+    }
+    
+    .card {
+        max-width: 100%;
+    }
+    
+    .tipsGrid {
+        grid-template-columns: 1fr;
+    }
+    
+    .formRow {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .pageTitle {
+        font-size: 1.8rem;
+    }
+    
+    .pageSubtitle {
+        font-size: 0.9rem;
+    }
+    
+    .cardValue {
+        font-size: 1.5rem;
+    }
+    
+    .formTab {
+        padding: 15px 10px;
+        font-size: 0.9rem;
+    }
+    
+    .card {
+        padding: 20px;
+    }
+    
+    .cardIcon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .transactionItem {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .transactionIcon {
+        margin-bottom: 10px;
+    }
+    
+    .transactionDetails {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+    
+    .transactionAmount {
+        align-self: flex-end;
+    }
+}

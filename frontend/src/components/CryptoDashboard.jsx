@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import '../styles/CryptoDashboard.css';
+import styles from '../styles/CryptoDashboard.module.css';
 
 const CryptoDashboard = ({ cryptocurrencies, news }) => {
   const [visible, setVisible] = useState(false);
@@ -11,9 +11,9 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
     if (!cryptocurrencies || !news || cryptocurrencies.length === 0 || news.length === 0) {
       return;
     }
-  
+    
     setVisible(true);
-  
+    
     let index = 0;
     const cryptoInterval = setInterval(() => {
       if (index < cryptocurrencies.length) {
@@ -23,44 +23,43 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
         clearInterval(cryptoInterval);
       }
     }, 300);
-  
-    setVisibleNews(news.map(item => item.id)); 
-  
+    
+    setVisibleNews(news.map(item => item.id));
+     
     return () => {
       clearInterval(cryptoInterval);
     };
   }, [cryptocurrencies, news]);
-  
-
+    
   return (
-    <div className={`crypto-dashboard ${visible ? 'visible' : ''}`}>
-      <div className="crypto-section">
-        <div className="flex justify-between mb-4">
-          <div className="flex space-x-4">
-            <button className="tab-button active">Popular</button>
-            <button className="tab-button inactive">New Listing</button>
+    <div className={`${styles.cryptoDashboard} ${visible ? styles.visible : ''}`}>
+      <div className={styles.cryptoSection}>
+        <div className={styles.sectionHeader}>
+          <div className={styles.tabContainer}>
+            <button className={`${styles.tabButton} ${styles.active}`}>Popular</button>
+            <button className={`${styles.tabButton} ${styles.inactive}`}>New Listing</button>
           </div>
-          <button className="view-all-button">View All 350+ Coins &gt;</button>
+          <button className={styles.viewAllButton}>View All 350+ Coins &gt;</button>
         </div>
-
-        <div className="crypto-list">
+        
+        <div className={styles.cryptoList}>
           {cryptocurrencies.map((crypto) => (
-            <div 
-              key={crypto.id} 
-              className={`crypto-item ${visibleCryptos.includes(crypto.id) ? 'visible' : ''}`}
+            <div
+              key={crypto.id}
+              className={`${styles.cryptoItem} ${visibleCryptos.includes(crypto.id) ? styles.visible : ''}`}
             >
-              <div className="flex items-center">
-                <div className="crypto-icon" style={{ backgroundColor: crypto.iconColorHex }}>
-                  <span className="text-white font-bold">{crypto.iconSymbol}</span>
+              <div className={styles.cryptoInfo}>
+                <div className={styles.cryptoIcon} style={{ backgroundColor: crypto.iconColorHex }}>
+                  <span className={styles.iconSymbol}>{crypto.iconSymbol}</span>
                 </div>
                 <div>
-                  <span className="crypto-name">{crypto.symbol}</span>
-                  <span className="crypto-fullname">{crypto.name}</span>
+                  <span className={styles.cryptoName}>{crypto.symbol}</span>
+                  <span className={styles.cryptoFullname}>{crypto.name}</span>
                 </div>
               </div>
-              <div className="flex items-center">
-                <div className="crypto-price">{crypto.price}</div>
-                <div className={crypto.isPositive ? 'price-up' : 'price-down'}>
+              <div className={styles.priceContainer}>
+                <div className={styles.cryptoPrice}>{crypto.price}</div>
+                <div className={crypto.isPositive ? styles.priceUp : styles.priceDown}>
                   {crypto.change}
                 </div>
               </div>
@@ -68,18 +67,18 @@ const CryptoDashboard = ({ cryptocurrencies, news }) => {
           ))}
         </div>
       </div>
-
-      <div className="news-section">
-        <div className="flex justify-between mb-4">
-          <h2 className="news-title">News</h2>
-          <button className="view-all-button">View All News &gt;</button>
+      
+      <div className={styles.newsSection}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.newsTitle}>News</h2>
+          <button className={styles.viewAllButton}>View All News &gt;</button>
         </div>
-
-        <div className="news-list">
+        
+        <div className={styles.newsList}>
           {news.map((item) => (
-            <div 
-              key={item.id} 
-              className={`news-item ${visibleNews.includes(item.id) ? 'visible' : ''}`}
+            <div
+              key={item.id}
+              className={`${styles.newsItem} ${visibleNews.includes(item.id) ? styles.visible : ''}`}
             >
               <p>{item.title}</p>
             </div>
