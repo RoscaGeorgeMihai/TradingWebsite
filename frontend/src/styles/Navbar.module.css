@@ -113,7 +113,8 @@
 }
 
 .loginBtn,
-.signupBtn {
+.signupBtn,
+.logoutBtn {
   font-size: 14px;
   padding: 8px 16px;
   font-weight: 600;
@@ -136,6 +137,19 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+.logoutBtn {
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--red);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.logoutBtn:hover {
+  background-color: rgba(13, 202, 240, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 .signupBtn {
   background-color: var(--secondary-color);
   color: var(--primary-color);
@@ -149,7 +163,8 @@
 }
 
 .loginBtn:active,
-.signupBtn:active {
+.signupBtn:active,
+.logoutBtn:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -329,7 +344,8 @@
   }
   
   .loginBtn, 
-  .signupBtn {
+  .signupBtn,
+  .logoutBtn {
     padding: 6px 12px;
     font-size: 13px;
   }

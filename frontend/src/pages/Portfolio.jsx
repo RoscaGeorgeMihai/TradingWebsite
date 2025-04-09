@@ -518,14 +518,13 @@ const Portfolio = () => {
             <span>Analiză</span>
           </button>
           <button className={`${styles.btn} ${styles.btnAction}`}>
-            <span className={styles.actionIcon}>📱</span>
-            <span>Mobil</span>
+            <span className={styles.actionIcon}>🔑</span>
+            <span>Schimbare parolă</span>
           </button>
         </div>
       </div>
     </div>
   );
-
   return (
     <div className={styles.dashboardContainer}>
       <div className={styles.container}>

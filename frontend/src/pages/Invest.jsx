@@ -7,12 +7,13 @@ const Invest = () => {
   const [availableFunds, setAvailableFunds] = useState(2750.25); // Fonduri disponibile pentru investiții
   const [investedAmount, setInvestedAmount] = useState(2249.75); // Suma deja investită
   
-  // State pentru formularul de depozit
+  // State pentru formularul de depozit/retragere
   const [depositAmount, setDepositAmount] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
+  const [iban, setIban] = useState(''); // Adăugat state pentru IBAN
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('deposit'); // deposit sau withdraw
@@ -55,6 +56,22 @@ const Invest = () => {
     return value;
   };
 
+  // Formatare IBAN (adaugă spații la fiecare 4 caractere)
+  const formatIban = (value) => {
+    const v = value.replace(/\s+/g, '').toUpperCase();
+    const parts = [];
+    
+    for (let i = 0, len = v.length; i < len; i += 4) {
+      parts.push(v.substring(i, i + 4));
+    }
+    
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return value;
+    }
+  };
+
   // Handler pentru schimbare număr card
   const handleCardNumberChange = (e) => {
     const formattedValue = formatCardNumber(e.target.value);
@@ -65,6 +82,12 @@ const Invest = () => {
   const handleExpiryDateChange = (e) => {
     const formattedValue = formatExpiryDate(e.target.value);
     setExpiryDate(formattedValue);
+  };
+
+  // Handler pentru schimbare IBAN
+  const handleIbanChange = (e) => {
+    const formattedValue = formatIban(e.target.value);
+    setIban(formattedValue);
   };
 
   // Handler pentru depozit
@@ -128,8 +151,8 @@ const Invest = () => {
   const handleWithdraw = (e) => {
     e.preventDefault();
     
-    if (!depositAmount || !cardNumber || !cardHolder || !expiryDate || !cvv) {
-      alert('Vă rugăm să completați toate câmpurile.');
+    if (!depositAmount || !iban) {
+      alert('Vă rugăm să completați suma și IBAN-ul.');
       return;
     }
 
@@ -171,10 +194,7 @@ const Invest = () => {
       
       // Resetează formularul
       setDepositAmount('');
-      setCardNumber('');
-      setCardHolder('');
-      setExpiryDate('');
-      setCvv('');
+      setIban('');
       
       setIsProcessing(false);
       setShowSuccess(true);
@@ -197,11 +217,9 @@ const Invest = () => {
     const newInvestedAmount = investedAmount + amount;
     const currentDate = new Date().toISOString().split('T')[0];
     
-    // Actualizează fondurile disponibile și suma investită
     setAvailableFunds(newAvailableFunds);
     setInvestedAmount(newInvestedAmount);
     
-    // Adaugă tranzacția în istoric
     const newTransaction = {
       id: transactions.length + 1,
       type: 'Investment',
@@ -215,6 +233,20 @@ const Invest = () => {
     alert('Investiție efectuată cu succes!');
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setDepositAmount('');
+    
+    if (tab === 'deposit') {
+      setCardNumber('');
+      setCardHolder('');
+      setExpiryDate('');
+      setCvv('');
+    } else {
+      setIban('');
+    }
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -222,7 +254,6 @@ const Invest = () => {
         <p className={styles.pageSubtitle}>Manage your funds, deposit money, and track your investment portfolio</p>
       </div>
       
-      {/* Overview cards */}
       <div className={styles.overviewCards}>
         <div className={styles.card}>
           <div className={styles.cardIcon}>
@@ -265,21 +296,19 @@ const Invest = () => {
         </div>
       </div>
       
-      {/* Main content area */}
       <div className={styles.mainContent}>
-        {/* Deposit/Withdraw form */}
         <div className={styles.formSection}>
           <div className={styles.formHeader}>
             <div className={styles.formTabs}>
               <button 
                 className={`${styles.formTab} ${activeTab === 'deposit' ? styles.active : ''}`}
-                onClick={() => setActiveTab('deposit')}
+                onClick={() => handleTabChange('deposit')}
               >
                 Deposit Funds
               </button>
               <button 
                 className={`${styles.formTab} ${activeTab === 'withdraw' ? styles.active : ''}`}
-                onClick={() => setActiveTab('withdraw')}
+                onClick={() => handleTabChange('withdraw')}
               >
                 Withdraw Funds
               </button>
@@ -302,58 +331,74 @@ const Invest = () => {
               </div>
             </div>
             
-            <div className={styles.formGroup}>
-              <label htmlFor="cardNumber">Card Number</label>
-              <input
-                type="text"
-                id="cardNumber"
-                placeholder="**** **** **** ****"
-                value={cardNumber}
-                onChange={handleCardNumberChange}
-                maxLength="19"
-                disabled={isProcessing}
-              />
-            </div>
-            
-            <div className={styles.formGroup}>
-              <label htmlFor="cardHolder">Card Holder Name</label>
-              <input
-                type="text"
-                id="cardHolder"
-                placeholder="Your name as it appears on card"
-                value={cardHolder}
-                onChange={(e) => setCardHolder(e.target.value)}
-                disabled={isProcessing}
-              />
-            </div>
-            
-            <div className={styles.formRow}>
+            {activeTab === 'deposit' ? (
+              <>
+                <div className={styles.formGroup}>
+                  <label htmlFor="cardNumber">Card Number</label>
+                  <input
+                    type="text"
+                    id="cardNumber"
+                    placeholder="**** **** **** ****"
+                    value={cardNumber}
+                    onChange={handleCardNumberChange}
+                    maxLength="19"
+                    disabled={isProcessing}
+                  />
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="cardHolder">Card Holder Name</label>
+                  <input
+                    type="text"
+                    id="cardHolder"
+                    placeholder="Your name as it appears on card"
+                    value={cardHolder}
+                    onChange={(e) => setCardHolder(e.target.value)}
+                    disabled={isProcessing}
+                  />
+                </div>
+                
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="expiryDate">Expiry Date</label>
+                    <input
+                      type="text"
+                      id="expiryDate"
+                      placeholder="MM/YY"
+                      value={expiryDate}
+                      onChange={handleExpiryDateChange}
+                      maxLength="5"
+                      disabled={isProcessing}
+                    />
+                  </div>
+                  
+                  <div className={styles.formGroup}>
+                    <label htmlFor="cvv">CVV</label>
+                    <input
+                      type="text"
+                      id="cvv"
+                      placeholder="***"
+                      value={cvv}
+                      onChange={(e) => setCvv(e.target.value.replace(/\D/g, ''))}
+                      maxLength="3"
+                      disabled={isProcessing}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
               <div className={styles.formGroup}>
-                <label htmlFor="expiryDate">Expiry Date</label>
+                <label htmlFor="iban">IBAN</label>
                 <input
                   type="text"
-                  id="expiryDate"
-                  placeholder="MM/YY"
-                  value={expiryDate}
-                  onChange={handleExpiryDateChange}
-                  maxLength="5"
+                  id="iban"
+                  placeholder="ROXX XXXX XXXX XXXX XXXX XXXX"
+                  value={iban}
+                  onChange={handleIbanChange}
                   disabled={isProcessing}
                 />
               </div>
-              
-              <div className={styles.formGroup}>
-                <label htmlFor="cvv">CVV</label>
-                <input
-                  type="text"
-                  id="cvv"
-                  placeholder="***"
-                  value={cvv}
-                  onChange={(e) => setCvv(e.target.value.replace(/\D/g, ''))}
-                  maxLength="3"
-                  disabled={isProcessing}
-                />
-              </div>
-            </div>
+            )}
             
             <button
               type="submit"
@@ -418,7 +463,6 @@ const Invest = () => {
         </div>
       </div>
       
-      {/* Investment tips section */}
       <div className={styles.tipsSection}>
         <h2>Investment Tips</h2>
         <div className={styles.tipsGrid}>

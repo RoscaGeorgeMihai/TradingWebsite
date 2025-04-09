@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../components/AuthContext";
 import styles from "../styles/Navbar.module.css";
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
+  
+  const { isAuthenticated, logout } = useContext(AuthContext);
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -19,6 +22,11 @@ function Navbar() {
     event.preventDefault();
     navigate(path);
     setMenuOpen(false);
+  };
+  
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
   };
 
   return (
@@ -45,8 +53,8 @@ function Navbar() {
             </a>
           </li>
           <li className={styles.dropdown}>
-            <a 
-              href="#" 
+            <a
+              href="#"
               onClick={(e) => {
                 e.preventDefault();
                 toggleDropdown();
@@ -66,8 +74,8 @@ function Navbar() {
                 </a>
               </li>
               <li>
-                <a 
-                  href="/commodities" 
+                <a
+                  href="/commodities"
                   onClick={(e) => handleNavigation("/commodities", e)}
                 >
                   Commodities
@@ -76,8 +84,8 @@ function Navbar() {
             </ul>
           </li>
           <li>
-            <a 
-              href="/portfolio" 
+            <a
+              href="/portfolio"
               onClick={(e) => handleNavigation("/portfolio", e)}
             >
               Portfolio
@@ -91,12 +99,20 @@ function Navbar() {
         </ul>
 
         <div className={styles.authButtons}>
-          <button className={styles.loginBtn} onClick={() => navigate("/login")}>
-            Log In
-          </button>
-          <button className={styles.signupBtn} onClick={() => navigate("/signup")}>
-            Sign Up
-          </button>
+          {isAuthenticated ? (
+            <button className={styles.logoutBtn} onClick={handleLogout}>
+              Log Out
+            </button>
+          ) : (
+            <>
+              <button className={styles.loginBtn} onClick={() => navigate("/login")}>
+                Log In
+              </button>
+              <button className={styles.signupBtn} onClick={() => navigate("/signup")}>
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
 
         <button className={styles.menuBtn} onClick={toggleMenu}>
