@@ -31,6 +31,18 @@ const usersSchema = new mongoose.Schema({
         type: String,
         enum: ['active','deactivate'],
         default: 'active'
+    },
+    totalBalance: {
+        type: Number,
+        default: 0
+    },
+    availableFunds: {
+        type: Number,
+        default: 0
+    },
+    investedAmount: {
+        type: Number,
+        default: 0
     }
 });
 

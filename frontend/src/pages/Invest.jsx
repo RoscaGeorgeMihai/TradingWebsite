@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
+import { InvestContext } from '../components/InvestContext';
 import styles from '../styles/Invest.module.css';
 
 const Invest = () => {
-  // State pentru datele utilizatorului
-  const [balance, setBalance] = useState(5000.00); // Buget initial
-  const [availableFunds, setAvailableFunds] = useState(2750.25); // Fonduri disponibile pentru investiții
-  const [investedAmount, setInvestedAmount] = useState(2249.75); // Suma deja investită
+  // Context pentru investiții
+  const { 
+    totalBalance, 
+    availableFunds, 
+    investedAmount, 
+    transactions, 
+    loading,
+    depositFunds, 
+    withdrawFunds
+  } = useContext(InvestContext);
   
   // State pentru formularul de depozit/retragere
   const [depositAmount, setDepositAmount] = useState('');
@@ -13,19 +20,12 @@ const Invest = () => {
   const [cardHolder, setCardHolder] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
-  const [iban, setIban] = useState(''); // Adăugat state pentru IBAN
+  const [iban, setIban] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [activeTab, setActiveTab] = useState('deposit'); // deposit sau withdraw
-
-  // Istoricul tranzacțiilor
-  const [transactions, setTransactions] = useState([
-    { id: 1, type: 'Deposit', amount: 1000.00, date: '2025-03-24', status: 'Completed' },
-    { id: 2, type: 'Investment', amount: -500.50, date: '2025-03-26', status: 'Completed' },
-    { id: 3, type: 'Deposit', amount: 1500.00, date: '2025-04-01', status: 'Completed' },
-    { id: 4, type: 'Withdrawal', amount: -250.00, date: '2025-04-03', status: 'Completed' },
-    { id: 5, type: 'Investment', amount: -749.25, date: '2025-04-05', status: 'Completed' }
-  ]);
 
   // Formatare număr card (adaugă spații la fiecare 4 cifre)
   const formatCardNumber = (value) => {
@@ -91,45 +91,38 @@ const Invest = () => {
   };
 
   // Handler pentru depozit
-  const handleDeposit = (e) => {
+  const handleDeposit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     
+    // Validare date
     if (!depositAmount || !cardNumber || !cardHolder || !expiryDate || !cvv) {
-      alert('Vă rugăm să completați toate câmpurile.');
+      setErrorMessage('Vă rugăm să completați toate câmpurile.');
       return;
     }
 
     const amount = parseFloat(depositAmount);
     
     if (isNaN(amount) || amount <= 0) {
-      alert('Vă rugăm să introduceți o sumă validă.');
+      setErrorMessage('Vă rugăm să introduceți o sumă validă.');
       return;
     }
 
-    // Simulează procesarea plății
+    // Procesarea depozitului
     setIsProcessing(true);
     
-    setTimeout(() => {
-      const newBalance = balance + amount;
-      const newAvailableFunds = availableFunds + amount;
-      const currentDate = new Date().toISOString().split('T')[0];
-      
-      // Actualizează balanța și fondurile disponibile
-      setBalance(newBalance);
-      setAvailableFunds(newAvailableFunds);
-      // Nu modificăm investedAmount deoarece depozitul crește doar fondurile disponibile
-      
-      // Adaugă tranzacția în istoric
-      const newTransaction = {
-        id: transactions.length + 1,
-        type: 'Deposit',
-        amount: amount,
-        date: currentDate,
-        status: 'Completed'
-      };
-      
-      setTransactions([newTransaction, ...transactions]);
-      
+    const cardDetails = {
+      cardNumber,
+      cardHolder,
+      expiryDate,
+      cvv
+    };
+    
+    const result = await depositFunds(amount, cardDetails);
+    
+    setIsProcessing(false);
+    
+    if (result.success) {
       // Resetează formularul
       setDepositAmount('');
       setCardNumber('');
@@ -137,105 +130,71 @@ const Invest = () => {
       setExpiryDate('');
       setCvv('');
       
-      setIsProcessing(false);
+      // Afișează mesajul de succes
+      setSuccessMessage('Depozit efectuat cu succes!');
       setShowSuccess(true);
       
       // Ascunde mesajul de succes după 3 secunde
       setTimeout(() => {
         setShowSuccess(false);
       }, 3000);
-    }, 1500);
+    } else {
+      setErrorMessage(result.message);
+    }
   };
 
   // Handler pentru retragere
-  const handleWithdraw = (e) => {
+  const handleWithdraw = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     
+    // Validare date
     if (!depositAmount || !iban) {
-      alert('Vă rugăm să completați suma și IBAN-ul.');
+      setErrorMessage('Vă rugăm să completați suma și IBAN-ul.');
       return;
     }
 
     const amount = parseFloat(depositAmount);
     
     if (isNaN(amount) || amount <= 0) {
-      alert('Vă rugăm să introduceți o sumă validă.');
+      setErrorMessage('Vă rugăm să introduceți o sumă validă.');
       return;
     }
 
     if (amount > availableFunds) {
-      alert('Fonduri insuficiente pentru retragere.');
+      setErrorMessage('Fonduri insuficiente pentru retragere.');
       return;
     }
 
-    // Simulează procesarea retragerii
+    // Procesarea retragerii
     setIsProcessing(true);
     
-    setTimeout(() => {
-      const newBalance = balance - amount;
-      const newAvailableFunds = availableFunds - amount;
-      const currentDate = new Date().toISOString().split('T')[0];
-      
-      // Actualizează balanța și fondurile disponibile
-      setBalance(newBalance);
-      setAvailableFunds(newAvailableFunds);
-      // Nu modificăm investedAmount deoarece retragerea afectează doar fondurile disponibile
-      
-      // Adaugă tranzacția în istoric
-      const newTransaction = {
-        id: transactions.length + 1,
-        type: 'Withdrawal',
-        amount: -amount,
-        date: currentDate,
-        status: 'Completed'
-      };
-      
-      setTransactions([newTransaction, ...transactions]);
-      
+    const result = await withdrawFunds(amount, iban);
+    
+    setIsProcessing(false);
+    
+    if (result.success) {
       // Resetează formularul
       setDepositAmount('');
       setIban('');
       
-      setIsProcessing(false);
+      // Afișează mesajul de succes
+      setSuccessMessage('Retragere efectuată cu succes!');
       setShowSuccess(true);
       
       // Ascunde mesajul de succes după 3 secunde
       setTimeout(() => {
         setShowSuccess(false);
       }, 3000);
-    }, 1500);
-  };
-
-  // Adăugat: Funcție pentru a face o investiție
-  const handleInvestment = (amount) => {
-    if (amount > availableFunds) {
-      alert('Fonduri insuficiente pentru investiție.');
-      return;
+    } else {
+      setErrorMessage(result.message);
     }
-
-    const newAvailableFunds = availableFunds - amount;
-    const newInvestedAmount = investedAmount + amount;
-    const currentDate = new Date().toISOString().split('T')[0];
-    
-    setAvailableFunds(newAvailableFunds);
-    setInvestedAmount(newInvestedAmount);
-    
-    const newTransaction = {
-      id: transactions.length + 1,
-      type: 'Investment',
-      amount: -amount,
-      date: currentDate,
-      status: 'Completed'
-    };
-    
-    setTransactions([newTransaction, ...transactions]);
-    
-    alert('Investiție efectuată cu succes!');
   };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setDepositAmount('');
+    setErrorMessage('');
     
     if (tab === 'deposit') {
       setCardNumber('');
@@ -246,6 +205,22 @@ const Invest = () => {
       setIban('');
     }
   };
+
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => {
+        // Forțează încărcarea datelor chiar dacă API-ul eșuează
+        console.log('Timeout la încărcare, se afișează date implicite');
+        // Aici ai putea să apelezi direct dispatch pentru a reseta starea de loading
+      }, 5000); // 5 secunde timeout
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  if (loading) {
+    return <div className={styles.loading}>Se încarcă datele financiare...</div>;
+  }
 
   return (
     <div className={styles.container}>
@@ -264,7 +239,7 @@ const Invest = () => {
           </div>
           <div className={styles.cardContent}>
             <h2>Total Balance</h2>
-            <p className={styles.cardValue}>${balance.toFixed(2)}</p>
+            <p className={styles.cardValue}>${totalBalance.toFixed(2)}</p>
           </div>
         </div>
         
@@ -314,6 +289,12 @@ const Invest = () => {
               </button>
             </div>
           </div>
+          
+          {errorMessage && (
+            <div className={styles.errorMessage}>
+              {errorMessage}
+            </div>
+          )}
           
           <form className={styles.depositForm} onSubmit={activeTab === 'deposit' ? handleDeposit : handleWithdraw}>
             <div className={styles.formGroup}>
@@ -410,7 +391,7 @@ const Invest = () => {
             
             {showSuccess && (
               <div className={styles.successMessage}>
-                {activeTab === 'deposit' ? 'Deposit successful!' : 'Withdrawal successful!'}
+                {successMessage}
               </div>
             )}
             
@@ -428,37 +409,41 @@ const Invest = () => {
         <div className={styles.transactionSection}>
           <h2>Recent Transactions</h2>
           <div className={styles.transactionList}>
-            {transactions.map(transaction => (
-              <div key={transaction.id} className={styles.transactionItem}>
-                <div className={styles.transactionIcon} data-type={transaction.type.toLowerCase()}>
-                  {transaction.type === 'Deposit' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2v20M2 12h20"></path>
-                    </svg>
-                  )}
-                  {transaction.type === 'Withdrawal' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14"></path>
-                    </svg>
-                  )}
-                  {transaction.type === 'Investment' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M2 20h.01M7 20v-4"></path>
-                      <path d="M12 20v-8"></path>
-                      <path d="M17 20V8"></path>
-                      <path d="M22 4v16h.01"></path>
-                    </svg>
-                  )}
+            {transactions.length === 0 ? (
+              <div className={styles.noTransactions}>No transactions yet</div>
+            ) : (
+              transactions.map(transaction => (
+                <div key={transaction.id} className={styles.transactionItem}>
+                  <div className={styles.transactionIcon} data-type={transaction.type.toLowerCase()}>
+                    {transaction.type === 'Deposit' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2v20M2 12h20"></path>
+                      </svg>
+                    )}
+                    {transaction.type === 'Withdrawal' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14"></path>
+                      </svg>
+                    )}
+                    {transaction.type === 'Investment' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2 20h.01M7 20v-4"></path>
+                        <path d="M12 20v-8"></path>
+                        <path d="M17 20V8"></path>
+                        <path d="M22 4v16h.01"></path>
+                      </svg>
+                    )}
+                  </div>
+                  <div className={styles.transactionDetails}>
+                    <div className={styles.transactionType}>{transaction.type}</div>
+                    <div className={styles.transactionDate}>{transaction.date}</div>
+                  </div>
+                  <div className={styles.transactionAmount} data-positive={transaction.amount > 0}>
+                    {transaction.amount > 0 ? '+' : ''}{transaction.amount.toFixed(2)} USD
+                  </div>
                 </div>
-                <div className={styles.transactionDetails}>
-                  <div className={styles.transactionType}>{transaction.type}</div>
-                  <div className={styles.transactionDate}>{transaction.date}</div>
-                </div>
-                <div className={styles.transactionAmount} data-positive={transaction.amount > 0}>
-                  {transaction.amount > 0 ? '+' : ''}{transaction.amount.toFixed(2)} USD
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
