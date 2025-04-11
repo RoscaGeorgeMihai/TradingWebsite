@@ -16,6 +16,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/api/auth',require('./routes/auth'));
+app.use('/api/invest', require('./routes/investRoutes'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
