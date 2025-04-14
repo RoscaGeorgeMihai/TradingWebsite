@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from '../styles/Stocks.module.css';
+import tiingoApi from '../services/tiingoApi'; // Import the tiingoApi
 
 const Stocks = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [stocksData, setStocksData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Categories for stock markets/sectors
   const categories = [
@@ -19,15 +22,12 @@ const Stocks = () => {
     { id: 'consumer', name: 'Consumer' }
   ];
 
-  // Popular stocks data with additional information
-  const stocksData = [
+  // Initial stocks data structure
+  const initialStocksData = [
     { 
       symbol: 'AAPL', 
       name: 'Apple Inc.', 
-      color: '#0066cc', 
-      price: '178.72', 
-      change: '+1.25%', 
-      isPositive: true,
+      color: '#0066cc',
       category: 'tech',
       marketCap: '$2.8T',
       volume: '$5.7B',
@@ -37,10 +37,7 @@ const Stocks = () => {
     { 
       symbol: 'GOOGL', 
       name: 'Alphabet Inc.', 
-      color: '#4285f4', 
-      price: '142.17', 
-      change: '+0.87%', 
-      isPositive: true,
+      color: '#4285f4',
       category: 'tech',
       marketCap: '$1.8T',
       volume: '$3.2B',
@@ -50,10 +47,7 @@ const Stocks = () => {
     { 
       symbol: 'MSFT', 
       name: 'Microsoft Corp.', 
-      color: '#0077b5', 
-      price: '413.56', 
-      change: '+0.63%', 
-      isPositive: true,
+      color: '#0077b5',
       category: 'tech',
       marketCap: '$3.1T',
       volume: '$4.9B',
@@ -63,10 +57,7 @@ const Stocks = () => {
     { 
       symbol: 'AMZN', 
       name: 'Amazon.com Inc.', 
-      color: '#ff9900', 
-      price: '180.85', 
-      change: '+1.42%', 
-      isPositive: true,
+      color: '#ff9900',
       category: 'consumer',
       marketCap: '$1.9T',
       volume: '$4.3B',
@@ -76,10 +67,7 @@ const Stocks = () => {
     { 
       symbol: 'NFLX', 
       name: 'Netflix Inc.', 
-      color: '#e50914', 
-      price: '687.25', 
-      change: '-0.32%', 
-      isPositive: false,
+      color: '#e50914',
       category: 'tech',
       marketCap: '$301B',
       volume: '$2.1B',
@@ -89,10 +77,7 @@ const Stocks = () => {
     { 
       symbol: 'TSLA', 
       name: 'Tesla Inc.', 
-      color: '#005e7c', 
-      price: '254.33', 
-      change: '+2.78%', 
-      isPositive: true,
+      color: '#005e7c',
       category: 'consumer',
       marketCap: '$807B',
       volume: '$8.2B',
@@ -103,10 +88,7 @@ const Stocks = () => {
     { 
       symbol: 'NVDA', 
       name: 'NVIDIA Corp.', 
-      color: '#800080', 
-      price: '118.77', 
-      change: '+4.35%', 
-      isPositive: true,
+      color: '#800080',
       category: 'tech',
       marketCap: '$2.9T',
       volume: '$12.7B',
@@ -116,10 +98,7 @@ const Stocks = () => {
     { 
       symbol: 'PYPL', 
       name: 'PayPal Holdings', 
-      color: '#007dff', 
-      price: '64.22', 
-      change: '+3.87%', 
-      isPositive: true,
+      color: '#007dff',
       category: 'finance',
       marketCap: '$68.3B',
       volume: '$1.9B',
@@ -129,10 +108,7 @@ const Stocks = () => {
     { 
       symbol: 'SQ', 
       name: 'Block Inc.', 
-      color: '#2b9348', 
-      price: '76.84', 
-      change: '+3.52%', 
-      isPositive: true,
+      color: '#2b9348',
       category: 'finance',
       marketCap: '$47.1B',
       volume: '$1.3B',
@@ -142,10 +118,7 @@ const Stocks = () => {
     { 
       symbol: 'AMD', 
       name: 'Advanced Micro Dev.', 
-      color: '#0d47a1', 
-      price: '156.79', 
-      change: '+3.24%', 
-      isPositive: true,
+      color: '#0d47a1',
       category: 'tech',
       marketCap: '$253B',
       volume: '$5.8B',
@@ -155,10 +128,7 @@ const Stocks = () => {
     { 
       symbol: 'SHOP', 
       name: 'Shopify Inc.', 
-      color: '#087e8b', 
-      price: '78.35', 
-      change: '+2.98%', 
-      isPositive: true,
+      color: '#087e8b',
       category: 'tech',
       marketCap: '$101B',
       volume: '$1.6B',
@@ -168,10 +138,7 @@ const Stocks = () => {
     { 
       symbol: 'UBER', 
       name: 'Uber Technologies', 
-      color: '#5d4c46', 
-      price: '72.14', 
-      change: '+2.82%', 
-      isPositive: true,
+      color: '#5d4c46',
       category: 'tech',
       marketCap: '$149B',
       volume: '$2.4B',
@@ -182,10 +149,7 @@ const Stocks = () => {
     { 
       symbol: 'ZM', 
       name: 'Zoom Video Comm.', 
-      color: '#6a0dad', 
-      price: '63.45', 
-      change: '-4.28%', 
-      isPositive: false,
+      color: '#6a0dad',
       category: 'tech',
       marketCap: '$19.2B',
       volume: '$1.1B',
@@ -195,10 +159,7 @@ const Stocks = () => {
     { 
       symbol: 'PLTR', 
       name: 'Palantir Tech.', 
-      color: '#1aa3ff', 
-      price: '22.87', 
-      change: '-3.94%', 
-      isPositive: false,
+      color: '#1aa3ff',
       category: 'tech',
       marketCap: '$50.3B',
       volume: '$2.3B',
@@ -208,10 +169,7 @@ const Stocks = () => {
     { 
       symbol: 'ROKU', 
       name: 'Roku Inc.', 
-      color: '#3d405b', 
-      price: '65.22', 
-      change: '-3.65%', 
-      isPositive: false,
+      color: '#3d405b',
       category: 'tech',
       marketCap: '$9.4B',
       volume: '$1.7B',
@@ -221,10 +179,7 @@ const Stocks = () => {
     { 
       symbol: 'DOCU', 
       name: 'DocuSign Inc.', 
-      color: '#dd1c1a', 
-      price: '53.72', 
-      change: '-3.38%', 
-      isPositive: false,
+      color: '#dd1c1a',
       category: 'tech',
       marketCap: '$11B',
       volume: '$943M',
@@ -234,10 +189,7 @@ const Stocks = () => {
     { 
       symbol: 'CRSR', 
       name: 'Corsair Gaming', 
-      color: '#1e8253', 
-      price: '10.76', 
-      change: '-3.26%', 
-      isPositive: false,
+      color: '#1e8253',
       category: 'consumer',
       marketCap: '$1.1B',
       volume: '$210M',
@@ -247,10 +199,7 @@ const Stocks = () => {
     { 
       symbol: 'PINS', 
       name: 'Pinterest Inc.', 
-      color: '#d62828', 
-      price: '31.43', 
-      change: '-2.89%', 
-      isPositive: false,
+      color: '#d62828',
       category: 'tech',
       marketCap: '$21.4B',
       volume: '$1.2B',
@@ -258,6 +207,105 @@ const Stocks = () => {
       ranking: 'loser'
     }
   ];
+
+  // Fetch stock data using tiingoApi
+  useEffect(() => {
+    const fetchStockData = async () => {
+      setLoading(true);
+      try {
+        // Extract all stock symbols from the initial data
+        const symbols = initialStocksData.map(stock => stock.symbol);
+        
+        // Fetch quotes for all symbols at once
+        const quotesMap = await tiingoApi.getMultipleStockQuotes(symbols);
+        
+        // Merge the quotes with the initial data
+        const updatedStocksData = initialStocksData.map(stock => {
+          const quote = quotesMap[stock.symbol] || {};
+          
+          // Calculate if the stock change is positive
+          const isPositive = quote.change > 0;
+          
+          // Format the change percentage
+          const changePercent = quote.changePercent 
+            ? `${isPositive ? '+' : ''}${quote.changePercent.toFixed(2)}%` 
+            : '0.00%';
+          
+          return {
+            ...stock,
+            price: quote.price ? quote.price.toFixed(2) : '0.00',
+            change: changePercent,
+            isPositive,
+            // Update rankings based on actual price changes
+            ranking: determineRanking(stock.ranking, quote.changePercent)
+          };
+        });
+        
+        // Sort gainers and losers based on actual price changes
+        const sortedData = sortStocksByPerformance(updatedStocksData);
+        
+        setStocksData(sortedData);
+      } catch (error) {
+        console.error('Error fetching stock data:', error);
+        // Fallback to static data if API fetch fails
+        setStocksData(initialStocksData.map(stock => ({
+          ...stock,
+          price: '0.00',
+          change: '0.00%',
+          isPositive: false
+        })));
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStockData();
+    
+    // Set up a refresh interval (every 60 seconds)
+    const refreshInterval = setInterval(fetchStockData, 60000);
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(refreshInterval);
+  }, []);
+
+  // Determine ranking based on actual percentage change
+  const determineRanking = (originalRanking, changePercent) => {
+    if (!changePercent) return originalRanking;
+    
+    // Keep original ranking as a fallback
+    if (changePercent > 2.5) return 'gainer';
+    if (changePercent < -2.5) return 'loser';
+    return originalRanking;
+  };
+
+  // Sort stocks by performance to ensure gainers and losers are accurate
+  const sortStocksByPerformance = (stocks) => {
+    // Create a copy to avoid mutating the original array
+    const stocksCopy = [...stocks];
+    
+    // Sort stocks by changePercent (extract numeric value from string)
+    stocksCopy.sort((a, b) => {
+      const aChange = parseFloat(a.change);
+      const bChange = parseFloat(b.change);
+      return bChange - aChange;
+    });
+    
+    // Update rankings for top performers
+    stocksCopy.slice(0, 6).forEach(stock => {
+      if (parseFloat(stock.change) > 0) {
+        stock.ranking = 'gainer';
+      }
+    });
+    
+    // Update rankings for worst performers
+    stocksCopy.slice(-6).forEach(stock => {
+      if (parseFloat(stock.change) < 0) {
+        stock.ranking = 'loser';
+      }
+    });
+    
+    return stocksCopy;
+  };
 
   // Filter stocks based on active category and search term
   const filteredStocks = stocksData.filter(stock => {
@@ -312,8 +360,16 @@ const Stocks = () => {
         </div>
       </div>
       
+      {/* Loading indicator */}
+      {loading && (
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingSpinner}></div>
+          <p>Loading stock data...</p>
+        </div>
+      )}
+      
       {/* Featured stock - only show if there are filtered stocks */}
-      {featuredStock && (
+      {!loading && featuredStock && (
         <div className={styles.featuredStock}>
           <div className={styles.featuredContent}>
             <div className={styles.featuredHeader}>
@@ -363,169 +419,171 @@ const Stocks = () => {
       )}
       
       {/* Stock sections - only show if there are filtered stocks in each category */}
-      <div className={styles.stockSections}>
-        {popularStocks.length > 0 && (
-          <div className={styles.stockSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Popular Stocks</h2>
-              <Link to="/stocks/popular" className={styles.viewAllLink}>View All</Link>
+      {!loading && (
+        <div className={styles.stockSections}>
+          {popularStocks.length > 0 && (
+            <div className={styles.stockSection}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Popular Stocks</h2>
+                <Link to="/stocks/popular" className={styles.viewAllLink}>View All</Link>
+              </div>
+              <div className={styles.stocksGrid}>
+                {popularStocks.map((stock) => (
+                  <Link 
+                    to={`/stocks/${stock.symbol}`}
+                    key={stock.symbol} 
+                    className={styles.stockCard}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <div className={styles.stockHeader}>
+                      <div 
+                        className={styles.stockIcon} 
+                        style={{ backgroundColor: stock.color }}
+                      >
+                        {stock.symbol[0]}
+                      </div>
+                      <div className={styles.stockDetails}>
+                        <div className={styles.stockName}>{stock.name}</div>
+                        <div className={styles.stockSymbol}>{stock.symbol}</div>
+                      </div>
+                      <div className={styles.stockPriceInfo}>
+                        <div className={styles.stockPrice}>${stock.price}</div>
+                        <div className={`${styles.stockPriceChange} ${stock.isPositive ? styles.positive : styles.negative}`}>
+                          {stock.change}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.stockFooter}>
+                      <div className={styles.stockStats}>
+                        <div className={styles.statItem}>
+                          <span className={styles.statLabel}>Market Cap</span>
+                          <span className={styles.statValue}>{stock.marketCap}</span>
+                        </div>
+                        <div className={styles.statItem}>
+                          <span className={styles.statLabel}>P/E</span>
+                          <span className={styles.statValue}>{stock.pe}</span>
+                        </div>
+                      </div>
+                      <div className={styles.viewDetailsTag}>
+                        View Details
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-            <div className={styles.stocksGrid}>
-              {popularStocks.map((stock) => (
-                <Link 
-                  to={`/stocks/${stock.symbol}`}
-                  key={stock.symbol} 
-                  className={styles.stockCard}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <div className={styles.stockHeader}>
-                    <div 
-                      className={styles.stockIcon} 
-                      style={{ backgroundColor: stock.color }}
-                    >
-                      {stock.symbol[0]}
-                    </div>
-                    <div className={styles.stockDetails}>
-                      <div className={styles.stockName}>{stock.name}</div>
-                      <div className={styles.stockSymbol}>{stock.symbol}</div>
-                    </div>
-                    <div className={styles.stockPriceInfo}>
-                      <div className={styles.stockPrice}>${stock.price}</div>
-                      <div className={`${styles.stockPriceChange} ${stock.isPositive ? styles.positive : styles.negative}`}>
-                        {stock.change}
+          )}
+          
+          {topGainers.length > 0 && (
+            <div className={styles.stockSection}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Top Gainers</h2>
+                <Link to="/stocks/gainers" className={styles.viewAllLink}>View All</Link>
+              </div>
+              <div className={styles.stocksGrid}>
+                {topGainers.map((stock) => (
+                  <Link 
+                    to={`/stocks/${stock.symbol}`}
+                    key={stock.symbol} 
+                    className={styles.stockCard}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <div className={styles.stockHeader}>
+                      <div 
+                        className={styles.stockIcon} 
+                        style={{ backgroundColor: stock.color }}
+                      >
+                        {stock.symbol[0]}
+                      </div>
+                      <div className={styles.stockDetails}>
+                        <div className={styles.stockName}>{stock.name}</div>
+                        <div className={styles.stockSymbol}>{stock.symbol}</div>
+                      </div>
+                      <div className={styles.stockPriceInfo}>
+                        <div className={styles.stockPrice}>${stock.price}</div>
+                        <div className={`${styles.stockPriceChange} ${stock.isPositive ? styles.positive : styles.negative}`}>
+                          {stock.change}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className={styles.stockFooter}>
-                    <div className={styles.stockStats}>
-                      <div className={styles.statItem}>
-                        <span className={styles.statLabel}>Market Cap</span>
-                        <span className={styles.statValue}>{stock.marketCap}</span>
+                    <div className={styles.stockFooter}>
+                      <div className={styles.stockStats}>
+                        <div className={styles.statItem}>
+                          <span className={styles.statLabel}>Market Cap</span>
+                          <span className={styles.statValue}>{stock.marketCap}</span>
+                        </div>
+                        <div className={styles.statItem}>
+                          <span className={styles.statLabel}>P/E</span>
+                          <span className={styles.statValue}>{stock.pe}</span>
+                        </div>
                       </div>
-                      <div className={styles.statItem}>
-                        <span className={styles.statLabel}>P/E</span>
-                        <span className={styles.statValue}>{stock.pe}</span>
+                      <div className={styles.viewDetailsTag}>
+                        View Details
                       </div>
                     </div>
-                    <div className={styles.viewDetailsTag}>
-                      View Details
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-        
-        {topGainers.length > 0 && (
-          <div className={styles.stockSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Top Gainers</h2>
-              <Link to="/stocks/gainers" className={styles.viewAllLink}>View All</Link>
+          )}
+          
+          {topLosers.length > 0 && (
+            <div className={styles.stockSection}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Top Losers</h2>
+                <Link to="/stocks/losers" className={styles.viewAllLink}>View All</Link>
+              </div>
+              <div className={styles.stocksGrid}>
+                {topLosers.map((stock) => (
+                  <Link 
+                    to={`/stocks/${stock.symbol}`}
+                    key={stock.symbol} 
+                    className={styles.stockCard}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <div className={styles.stockHeader}>
+                      <div 
+                        className={styles.stockIcon} 
+                        style={{ backgroundColor: stock.color }}
+                      >
+                        {stock.symbol[0]}
+                      </div>
+                      <div className={styles.stockDetails}>
+                        <div className={styles.stockName}>{stock.name}</div>
+                        <div className={styles.stockSymbol}>{stock.symbol}</div>
+                      </div>
+                      <div className={styles.stockPriceInfo}>
+                        <div className={styles.stockPrice}>${stock.price}</div>
+                        <div className={`${styles.stockPriceChange} ${stock.isPositive ? styles.positive : styles.negative}`}>
+                          {stock.change}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.stockFooter}>
+                      <div className={styles.stockStats}>
+                        <div className={styles.statItem}>
+                          <span className={styles.statLabel}>Market Cap</span>
+                          <span className={styles.statValue}>{stock.marketCap}</span>
+                        </div>
+                        <div className={styles.statItem}>
+                          <span className={styles.statLabel}>P/E</span>
+                          <span className={styles.statValue}>{stock.pe}</span>
+                        </div>
+                      </div>
+                      <div className={styles.viewDetailsTag}>
+                        View Details
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-            <div className={styles.stocksGrid}>
-              {topGainers.map((stock) => (
-                <Link 
-                  to={`/stocks/${stock.symbol}`}
-                  key={stock.symbol} 
-                  className={styles.stockCard}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <div className={styles.stockHeader}>
-                    <div 
-                      className={styles.stockIcon} 
-                      style={{ backgroundColor: stock.color }}
-                    >
-                      {stock.symbol[0]}
-                    </div>
-                    <div className={styles.stockDetails}>
-                      <div className={styles.stockName}>{stock.name}</div>
-                      <div className={styles.stockSymbol}>{stock.symbol}</div>
-                    </div>
-                    <div className={styles.stockPriceInfo}>
-                      <div className={styles.stockPrice}>${stock.price}</div>
-                      <div className={`${styles.stockPriceChange} ${stock.isPositive ? styles.positive : styles.negative}`}>
-                        {stock.change}
-                      </div>
-                    </div>
-                  </div>
-                  <div className={styles.stockFooter}>
-                    <div className={styles.stockStats}>
-                      <div className={styles.statItem}>
-                        <span className={styles.statLabel}>Market Cap</span>
-                        <span className={styles.statValue}>{stock.marketCap}</span>
-                      </div>
-                      <div className={styles.statItem}>
-                        <span className={styles.statLabel}>P/E</span>
-                        <span className={styles.statValue}>{stock.pe}</span>
-                      </div>
-                    </div>
-                    <div className={styles.viewDetailsTag}>
-                      View Details
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {topLosers.length > 0 && (
-          <div className={styles.stockSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Top Losers</h2>
-              <Link to="/stocks/losers" className={styles.viewAllLink}>View All</Link>
-            </div>
-            <div className={styles.stocksGrid}>
-              {topLosers.map((stock) => (
-                <Link 
-                  to={`/stocks/${stock.symbol}`}
-                  key={stock.symbol} 
-                  className={styles.stockCard}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <div className={styles.stockHeader}>
-                    <div 
-                      className={styles.stockIcon} 
-                      style={{ backgroundColor: stock.color }}
-                    >
-                      {stock.symbol[0]}
-                    </div>
-                    <div className={styles.stockDetails}>
-                      <div className={styles.stockName}>{stock.name}</div>
-                      <div className={styles.stockSymbol}>{stock.symbol}</div>
-                    </div>
-                    <div className={styles.stockPriceInfo}>
-                      <div className={styles.stockPrice}>${stock.price}</div>
-                      <div className={`${styles.stockPriceChange} ${stock.isPositive ? styles.positive : styles.negative}`}>
-                        {stock.change}
-                      </div>
-                    </div>
-                  </div>
-                  <div className={styles.stockFooter}>
-                    <div className={styles.stockStats}>
-                      <div className={styles.statItem}>
-                        <span className={styles.statLabel}>Market Cap</span>
-                        <span className={styles.statValue}>{stock.marketCap}</span>
-                      </div>
-                      <div className={styles.statItem}>
-                        <span className={styles.statLabel}>P/E</span>
-                        <span className={styles.statValue}>{stock.pe}</span>
-                      </div>
-                    </div>
-                    <div className={styles.viewDetailsTag}>
-                      View Details
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
       
       {/* Show message if no stocks match filter */}
-      {filteredStocks.length === 0 && (
+      {!loading && filteredStocks.length === 0 && (
         <div className={styles.noResults}>
           <p>No stocks found matching your criteria. Try adjusting your search or filters.</p>
         </div>

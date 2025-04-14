@@ -1,121 +1,447 @@
-import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import styles from '../styles/StockDetails.module.css';
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import PropTypes from 'prop-types'
+import styles from '../styles/StockDetails.module.css'
+import tiingoApi from '../services/tiingoApi'
+import StockChart from '../components/StockChart'
+import ApiErrorBoundary from '../components/ApiErrorBoundary'
+import { useParams } from 'react-router-dom'
 
-const StockDetail = ({ stockSymbol = "AAPL" }) => {
-  // State for stock data and active tab
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeTimeFilter, setActiveTimeFilter] = useState('3m');
-  const [stockData, setStockData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+const StockDetail = ({ stockSymbolProp }) => {
+  const { symbol: symbolFromUrl } = useParams()
+  const stockSymbol = stockSymbolProp || symbolFromUrl || 'AAPL'
+  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTimeFilter, setActiveTimeFilter] = useState('3m')
+  const [stockData, setStockData] = useState(null)
+  const [historicalData, setHistoricalData] = useState([])
+  const [marketData, setMarketData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [error, setError] = useState(null)
+  const [lastFetchTime, setLastFetchTime] = useState({ marketData: null })
+  const [refreshStatus, setRefreshStatus] = useState('')
+  const stockDataRef = useRef(null)
+  const isInitialMount = useRef(true)
 
-  // Simulate loading stock data
-  useEffect(() => {
-    // This would be a real API call to get stock data
-    setTimeout(() => {
-      const stocksData = {
-        "AAPL": {
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
-          currentPrice: 178.72,
-          priceChange: 1.25,
-          isPositive: true,
-          color: '#1976d2',
-          historicalData: generateMockHistoricalData(),
-          news: [
-            {
-              id: 1,
-              title: 'Apple announces new iPhone 16 launch',
-              source: 'TechNews',
-              date: 'April 3, 2025',
-              snippet: 'Apple announced today the launch of the new iPhone 16, which will feature advanced AI capabilities and improved battery life.',
-              url: '#'
-            },
-            {
-              id: 2,
-              title: 'Mac sales increase by 15% in Q1 2025',
-              source: 'Financial Report',
-              date: 'April 1, 2025',
-              snippet: 'Apple reports an impressive growth in Mac sales in the first quarter of 2025, exceeding analyst expectations.',
-              url: '#'
-            },
-            {
-              id: 3,
-              title: 'Apple expands services in Eastern Europe',
-              source: 'BusinessDaily',
-              date: 'March 28, 2025',
-              snippet: 'The tech giant is increasing its presence in Eastern Europe with new development centers and expanded services for users.',
-              url: '#'
-            },
-            {
-              id: 4,
-              title: 'iOS 19.2 update brings new security features',
-              source: 'TechInsider',
-              date: 'March 25, 2025',
-              snippet: 'The new system update brings significant improvements for user data protection and overall performance.',
-              url: '#'
-            }
-          ],
-          financials: {
-            revenue: [
-              { year: 2022, value: 394.33 },
-              { year: 2023, value: 383.29 },
-              { year: 2024, value: 391.42 },
-              { year: 2025, value: 412.68, estimated: true }
-            ],
-            eps: [
-              { year: 2022, value: 6.11 },
-              { year: 2023, value: 5.89 },
-              { year: 2024, value: 6.35 },
-              { year: 2025, value: 6.78, estimated: true }
-            ],
-            peRatio: 26.36,
-            dividendYield: 0.51,
-            marketCap: 2.78 // in trillions
-          }
-        }
-        // Data for other stocks would go here (MSFT, GOOGL, etc)
-      };
+  const [performanceData, setPerformanceData] = useState({
+    day: { change: 0, percentChange: 0 },
+    week: { change: 0, percentChange: 0 },
+    month: { change: 0, percentChange: 0 },
+    threeMonths: { change: 0, percentChange: 0 },
+    sixMonths: { change: 0, percentChange: 0 },
+    year: { change: 0, percentChange: 0 },
+    fiveYears: { change: 0, percentChange: 0 },
+    ytd: { change: 0, percentChange: 0 },
+  })
 
-      setStockData(stocksData[stockSymbol]);
-      setIsLoading(false);
-    }, 800);
-  }, [stockSymbol]);
-
-  // Function to generate historical data for the chart
-  function generateMockHistoricalData() {
-    const data = [];
-    const today = new Date();
-    let basePrice = 175;
-    
-    // Generate data for the last 180 days
-    for (let i = 180; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      
-      // Add random variation to price
-      const randomChange = (Math.random() - 0.5) * 3;
-      basePrice += randomChange;
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        price: parseFloat(basePrice.toFixed(2))
-      });
+  const getTiingoInterval = (timeFilter) => {
+    switch (timeFilter) {
+      case '1d': return '15min'
+      case '1w': return '1hour'
+      default: return 'daily'
     }
-    
-    return data;
   }
-  
-  // Tabs for sections
+
+  const isIntradayFilter = (timeFilter) => {
+    return ['1d', '1w'].includes(timeFilter)
+  }
+
+  const calculateExactPerformances = useCallback((historicalData, currentPriceOverride = null) => {
+    if (!historicalData || historicalData.length === 0) return
+
+    const sortedData = [...historicalData].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
+
+    const lastDataPoint = sortedData[sortedData.length - 1]
+    const currentPrice = currentPriceOverride !== null ? currentPriceOverride : (lastDataPoint.close || lastDataPoint.price)
+    const currentDate = new Date(lastDataPoint.date)
+
+    const findClosestDataPoint = (targetDate) => {
+      let closestIndex = 0
+      let closestDiff = Infinity
+      
+      for (let i = 0; i < sortedData.length; i++) {
+        const dataDate = new Date(sortedData[i].date)
+        const diff = Math.abs(dataDate.getTime() - targetDate.getTime())
+        if (diff < closestDiff) {
+          closestDiff = diff
+          closestIndex = i
+        }
+      }
+      return sortedData[closestIndex]
+    }
+
+    const timeRanges = [
+      { name: 'day', days: 1 },
+      { name: 'week', days: 7 },
+      { name: 'month', days: 30 },
+      { name: 'threeMonths', days: 90 },
+      { name: 'sixMonths', days: 180 },
+      { name: 'year', days: 365 },
+      { name: 'fiveYears', days: 365 * 5 },
+    ]
+
+    const newPerformanceData = {}
+
+    timeRanges.forEach((range) => {
+      const pastDate = new Date(currentDate)
+      pastDate.setDate(currentDate.getDate() - range.days)
+      const pastDataPoint = findClosestDataPoint(pastDate)
+      const pastPrice = pastDataPoint.close || pastDataPoint.price
+      const change = currentPrice - pastPrice
+      const percentChange = pastPrice !== 0 ? (change / pastPrice) * 100 : 0
+
+      newPerformanceData[range.name] = {
+        change,
+        percentChange,
+        currentDate: lastDataPoint.date,
+        currentPrice: currentPrice,
+        pastDate: pastDataPoint.date,
+        pastPrice: pastPrice
+      }
+    })
+
+    const startOfYear = new Date(currentDate.getFullYear(), 0, 1)
+    const startOfYearDataPoint = findClosestDataPoint(startOfYear)
+    const startOfYearPrice = startOfYearDataPoint.close || startOfYearDataPoint.price
+    const ytdChange = currentPrice - startOfYearPrice
+    const ytdPercentChange = startOfYearPrice !== 0 ? (ytdChange / startOfYearPrice) * 100 : 0
+
+    newPerformanceData.ytd = {
+      change: ytdChange,
+      percentChange: ytdPercentChange,
+      currentDate: lastDataPoint.date,
+      currentPrice: currentPrice,
+      pastDate: startOfYearDataPoint.date,
+      pastPrice: startOfYearPrice
+    }
+
+    setPerformanceData(newPerformanceData)
+  }, [])
+
+  const calculateAllPerformances = useCallback(async (currentPriceOverride = null) => {
+    try {
+      const today = new Date()
+      const oldestDate = new Date(today)
+      oldestDate.setFullYear(today.getFullYear() - 5)
+
+      const historicalData = await tiingoApi.getHistoricalData(
+        stockSymbol,
+        oldestDate,
+        today,
+        'daily',
+      )
+
+      let currentPrice = currentPriceOverride
+      if (currentPrice === null && stockDataRef.current) {
+        currentPrice = stockDataRef.current.currentPrice
+      }
+
+      const sortedData = [...historicalData].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      )
+
+      if (sortedData.length > 0 && currentPrice !== null) {
+        sortedData[sortedData.length - 1] = {
+          ...sortedData[sortedData.length - 1],
+          close: currentPrice,
+          price: currentPrice
+        }
+      }
+
+      calculateExactPerformances(sortedData, currentPrice)
+    } catch (error) {
+      console.error('Error calculating performance data:', error)
+    }
+  }, [stockSymbol, calculateExactPerformances])
+
+  const fetchAllData = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) {
+        setIsRefreshing(true)
+        setRefreshStatus('Refreshing market data...')
+      } else {
+        setIsLoading(true)
+      }
+      setError(null)
+
+      try {
+        const today = new Date()
+        let fromDate = new Date()
+
+        switch (activeTimeFilter) {
+          case '1d': fromDate.setDate(today.getDate() - 1); break
+          case '1w': fromDate.setDate(today.getDate() - 7); break
+          case '1m': fromDate.setMonth(today.getMonth() - 1); break
+          case '3m': fromDate.setMonth(today.getMonth() - 3); break
+          case '6m': fromDate.setMonth(today.getMonth() - 6); break
+          case '1y': fromDate.setFullYear(today.getFullYear() - 1); break
+          case '5y': fromDate.setFullYear(today.getFullYear() - 5); break
+          default: fromDate.setMonth(today.getMonth() - 3)
+        }
+
+        const interval = getTiingoInterval(activeTimeFilter)
+        const isIntraday = isIntradayFilter(activeTimeFilter)
+
+        let historical
+        if (isIntraday) {
+          historical = await tiingoApi.getIntradayData(stockSymbol, interval)
+          if (activeTimeFilter === '1w' && historical.length < 40) {
+            historical = await tiingoApi.getIntradayData(stockSymbol, '1hour')
+          }
+        } else {
+          historical = await tiingoApi.getHistoricalData(
+            stockSymbol,
+            fromDate,
+            today,
+            interval,
+          )
+        }
+
+        const chartData = historical.map((item) => ({
+          date: item.date,
+          price: item.close || item.price,
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          volume: item.volume,
+        }))
+
+        const [quote, companyProfile] = await Promise.all([
+          tiingoApi.getStockQuote(stockSymbol),
+          tiingoApi.getCompanyProfile(stockSymbol),
+        ])
+
+        const lastPrice = quote.tngoLast || quote.last || quote.price || 
+                         (chartData.length > 0 ? chartData[chartData.length - 1].price : 0)
+
+        if (chartData.length > 0) {
+          chartData[chartData.length - 1].price = lastPrice
+        }
+
+        let referencePrice
+        if (activeTimeFilter === '1d' && chartData.length > 0) {
+          referencePrice = chartData[0].price
+        } else if (chartData.length > 1) {
+          referencePrice = chartData[chartData.length - 2].price
+        } else if (quote.open) {
+          referencePrice = quote.open
+        } else {
+          referencePrice = lastPrice - quote.change
+        }
+
+        const priceChange = lastPrice - referencePrice
+        const isPositive = priceChange >= 0
+        const changePercent = referencePrice !== 0 ? (priceChange / referencePrice) * 100 : 0
+
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(today.getFullYear() - 1)
+
+        let yearlyData = historical
+        if (activeTimeFilter !== '1y' && activeTimeFilter !== '5y') {
+          yearlyData = await tiingoApi.getHistoricalData(
+            stockSymbol,
+            oneYearAgo,
+            today,
+            'daily',
+          )
+        }
+
+        let high52Week = 0
+        let low52Week = Number.MAX_VALUE
+
+        yearlyData.forEach((item) => {
+          const price = item.close || item.price
+          if (price > high52Week) high52Week = price
+          if (price < low52Week) low52Week = price
+        })
+
+        let totalVolume = 0
+        const recentData = yearlyData.slice(-30)
+        recentData.forEach((item) => {
+          totalVolume += item.volume || 0
+        })
+
+        const avgVolume = recentData.length > 0 ? totalVolume / recentData.length : 0
+
+        setMarketData({
+          open: quote.open || (chartData.length > 0 ? chartData[0].open : 0),
+          high: quote.high || (chartData.length > 0 ? Math.max(...chartData.map((d) => d.high)) : 0),
+          low: quote.low || (chartData.length > 0 ? Math.min(...chartData.map((d) => d.low)) : 0),
+          volume: quote.volume || (chartData.length > 0 ? chartData[chartData.length - 1].volume : 0),
+          high52Week: high52Week,
+          low52Week: low52Week,
+          avgVolume: avgVolume,
+          prevClose: quote.prevClose || referencePrice,
+          currentPrice: lastPrice,
+        })
+
+        setStockData({
+          symbol: stockSymbol,
+          name: companyProfile.name || stockSymbol,
+          currentPrice: lastPrice,
+          priceChange: priceChange,
+          changePercent: changePercent,
+          isPositive: isPositive,
+          color: generateColorFromSymbol(stockSymbol),
+          historicalData: chartData,
+          company: {
+            Name: companyProfile.name,
+            Exchange: companyProfile.exchange_acronym || companyProfile.stock_exchange || 'N/A',
+            Country: companyProfile.exchange_country || 'US',
+            Description: companyProfile.description || 'No description available',
+            Sector: companyProfile.sector || 'N/A',
+            Industry: companyProfile.industry || 'N/A',
+            Website: companyProfile.website || 'N/A',
+          },
+        })
+
+        setHistoricalData(chartData)
+        setLastFetchTime((prev) => ({ ...prev, marketData: new Date() }))
+        await calculateAllPerformances(lastPrice)
+      } catch (err) {
+        console.error('Error fetching stock data:', err)
+        if (err.response?.data?.error?.code === 'validation_error') {
+          setError('Invalid time interval selected. Please try a different time range.')
+        } else {
+          setError('Could not load stock data. Please try again later.')
+        }
+      } finally {
+        setIsLoading(false)
+        setIsRefreshing(false)
+        setRefreshStatus('')
+      }
+    },
+    [stockSymbol, activeTimeFilter, calculateAllPerformances]
+  )
+
+  useEffect(() => {
+    stockDataRef.current = stockData
+  }, [stockData])
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      fetchAllData()
+    }
+  }, [fetchAllData])
+
+  const handleTabChange = (tabId) => {
+    if (tabId === activeTab) return
+    setActiveTab(tabId)
+
+    if (tabId === 'market-data') {
+      console.log('Fetching full 5-year market data for detailed performance analysis')
+      setIsRefreshing(true)
+      setRefreshStatus('Fetching complete market data for accurate performance analysis...')
+
+      const fetchFullMarketData = async () => {
+        try {
+          const today = new Date()
+          const fiveYearsAgo = new Date()
+          fiveYearsAgo.setFullYear(today.getFullYear() - 5)
+
+          const quote = await tiingoApi.getStockQuote(stockSymbol)
+          const historical = await tiingoApi.getHistoricalData(
+            stockSymbol,
+            fiveYearsAgo,
+            today,
+            'daily',
+          )
+
+          const currentPrice = quote.tngoLast || quote.last || quote.price
+          const sortedData = [...historical].sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+          )
+
+          const formattedData = sortedData.map((item) => ({
+            date: item.date,
+            price: item.close || item.price,
+            open: item.open,
+            high: item.high,
+            low: item.low,
+            volume: item.volume,
+          }))
+
+          if (formattedData.length > 0) {
+            formattedData[formattedData.length - 1].price = currentPrice
+          }
+
+          setHistoricalData(formattedData)
+          setMarketData((prevData) => prevData ? { ...prevData, currentPrice: currentPrice } : null)
+
+          setStockData((prevData) => {
+            if (!prevData) return null
+            const referencePrice = prevData.currentPrice - prevData.priceChange
+            const priceChange = currentPrice - referencePrice
+            const changePercent = referencePrice !== 0 ? (priceChange / referencePrice) * 100 : 0
+            
+            return {
+              ...prevData,
+              currentPrice: currentPrice,
+              priceChange: priceChange,
+              changePercent: changePercent,
+              isPositive: priceChange >= 0,
+              historicalData: formattedData,
+            }
+          })
+
+          if (sortedData.length > 0) {
+            sortedData[sortedData.length - 1] = {
+              ...sortedData[sortedData.length - 1],
+              close: currentPrice,
+              price: currentPrice
+            }
+          }
+
+          calculateExactPerformances(sortedData, currentPrice)
+          setLastFetchTime((prev) => ({ ...prev, marketData: new Date() }))
+          setRefreshStatus('Market data updated with complete dataset')
+          setTimeout(() => setRefreshStatus(''), 3000)
+        } catch (err) {
+          console.error('Error fetching full market data:', err)
+          setRefreshStatus('Error updating market data')
+          setTimeout(() => setRefreshStatus(''), 3000)
+        } finally {
+          setIsRefreshing(false)
+        }
+      }
+
+      fetchFullMarketData()
+    }
+  }
+
+  const handleTimeFilterChange = (filter) => {
+    if (filter === activeTimeFilter) return
+    setActiveTimeFilter(filter)
+  }
+
+  useEffect(() => {
+    if (!isInitialMount.current) {
+      fetchAllData()
+    }
+  }, [activeTimeFilter, fetchAllData])
+
+  const generateColorFromSymbol = (symbol) => {
+    const colorMap = {
+      AAPL: '#1976d2',
+      MSFT: '#107c41',
+      AMZN: '#ff9900',
+      GOOGL: '#4285f4',
+      META: '#1877f2',
+      TSLA: '#e82127',
+      NVDA: '#76b900',
+    }
+    return colorMap[symbol] || `#${Math.floor(Math.random() * 16777215).toString(16)}`
+  }
+
   const tabs = [
     { id: 'overview', name: 'Overview' },
     { id: 'chart', name: 'Chart' },
-    { id: 'news', name: 'News' },
-    { id: 'financials', name: 'Financial Data' },
-    { id: 'analysis', name: 'Analysis' }
-  ];
+    { id: 'fundamentals', name: 'Fundamentals' },
+    { id: 'market-data', name: 'Market Data' },
+  ]
 
-  // Time filters for chart
   const timeFilters = [
     { id: '1d', name: '1D' },
     { id: '1w', name: '1W' },
@@ -123,367 +449,541 @@ const StockDetail = ({ stockSymbol = "AAPL" }) => {
     { id: '3m', name: '3M' },
     { id: '6m', name: '6M' },
     { id: '1y', name: '1Y' },
-    { id: '5y', name: '5Y' }
-  ];
+    { id: '5y', name: '5Y' },
+  ]
+
+  const formatNumber = (num) => {
+    if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`
+    if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`
+    if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`
+    return `$${num.toFixed(2)}`
+  }
+
+  const formatVolume = (volume) => {
+    if (volume >= 1000000000) return `${(volume / 1000000000).toFixed(2)}B`
+    if (volume >= 1000000) return `${(volume / 1000000).toFixed(2)}M`
+    if (volume >= 1000) return `${(volume / 1000).toFixed(2)}K`
+    return volume.toString()
+  }
 
   if (isLoading) {
-    return <div className={styles.loadingContainer}>Loading data...</div>;
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingSpinner}></div>
+        <p>Loading data for {stockSymbol}...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className={styles.errorContainer}>
+        <h2>Error loading data</h2>
+        <p>{error}</p>
+        <button className={styles.btnRetry} onClick={() => window.location.reload()}>
+          Try Again
+        </button>
+      </div>
+    )
+  }
+
+  if (!stockData) {
+    return (
+      <div className={styles.errorContainer}>
+        <p>No data available. Please try again.</p>
+      </div>
+    )
   }
 
   return (
-    <div className={styles.container}>
-      {/* Header with stock information */}
-      <div className={styles.stockHeader}>
-        <div className={styles.stockTitle}>
-          <div className={styles.stockSymbol} style={{ backgroundColor: stockData.color }}>
-            {stockData.symbol.charAt(0)}
+    <ApiErrorBoundary>
+      <div className={styles.container}>
+        <div className={styles.stockHeader}>
+          <div className={styles.stockTitle}>
+            <div className={styles.stockSymbol} style={{ backgroundColor: stockData.color }}>
+              {stockData.symbol.charAt(0)}
+            </div>
+            <div className={styles.stockName}>
+              <h1>{stockData.symbol}</h1>
+              <p>{stockData.name}</p>
+            </div>
           </div>
-          <div className={styles.stockName}>
-            <h1>{stockData.symbol}</h1>
-            <p>{stockData.name}</p>
+          <div className={styles.stockPrice}>
+            <p className={styles.currentPrice}>${stockData.currentPrice.toFixed(2)}</p>
+            <p className={`${styles.priceChange} ${stockData.isPositive ? styles.positive : styles.negative}`}>
+              {stockData.isPositive ? '+' : ''}
+              {stockData.priceChange.toFixed(2)} (
+              {Math.abs(stockData.changePercent).toFixed(2)}%)
+            </p>
+            <div className={styles.tradingButtonsHeader}>
+              <button className={styles.buyButtonHeader}>Buy</button>
+              <button className={styles.sellButtonHeader}>Sell</button>
+            </div>
           </div>
         </div>
-        <div className={styles.stockPrice}>
-          <p className={styles.currentPrice}>${stockData.currentPrice.toFixed(2)}</p>
-          <p className={`${styles.priceChange} ${stockData.isPositive ? styles.positive : styles.negative}`}>
-            {stockData.isPositive ? '+' : '-'}${Math.abs(stockData.priceChange).toFixed(2)} ({Math.abs(stockData.priceChange / (stockData.currentPrice - stockData.priceChange) * 100).toFixed(2)}%)
-          </p>
-          <button 
-            className={styles.btnInvest}
-            onClick={() => alert('Investment functionality will be implemented soon!')}
-          >
-            Invest Now
-          </button>
+
+        <div className={styles.stockTabs}>
+          {tabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              {tab.name}
+            </div>
+          ))}
         </div>
-      </div>
 
-      {/* Navigation tabs */}
-      <div className={styles.stockTabs}>
-        {tabs.map(tab => (
-          <div 
-            key={tab.id}
-            className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.name}
-          </div>
-        ))}
-      </div>
+        <div className={styles.tabContent}>
+          {activeTab === 'overview' && (
+            <div className={styles.overviewSection}>
+              <div className={styles.overviewLayout}>
+                <div className={`${styles.largeChartContainer} ${styles.card}`}>
+                  <h2>Price Chart</h2>
+                  <div className={styles.chartToolbar}>
+                    <div className={styles.timeFilters}>
+                      {timeFilters.map((filter) => (
+                        <button
+                          key={filter.id}
+                          className={`${styles.filterBtn} ${activeTimeFilter === filter.id ? styles.active : ''}`}
+                          onClick={() => handleTimeFilterChange(filter.id)}
+                        >
+                          {filter.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.chartContainer}>
+                    {historicalData.length > 0 ? (
+                      <StockChart
+                        data={historicalData}
+                        color={stockData.color}
+                        isIntraday={isIntradayFilter(activeTimeFilter)}
+                      />
+                    ) : (
+                      <div className={styles.noData}>No data available</div>
+                    )}
+                  </div>
+                </div>
 
-      {/* Content based on active tab */}
-      <div className={styles.tabContent}>
-        {activeTab === 'overview' && (
-          <div className={styles.overviewSection}>
-            {/* Modified layout with larger chart */}
-            <div className={styles.overviewLayout}>
-              {/* Left side with price chart */}
-              <div className={`${styles.largeChartContainer} ${styles.card}`}>
-                <h2>Price Chart</h2>
+                <div className={styles.sidebarContainer}>
+                  <div className={styles.card}>
+                    <h2>Company Info</h2>
+                    <div className={styles.summaryGrid}>
+                      <div className={styles.summaryItem}>
+                        <span className={styles.label}>Exchange</span>
+                        <span className={styles.value}>{stockData.company.Exchange}</span>
+                      </div>
+                      <div className={styles.summaryItem}>
+                        <span className={styles.label}>Country</span>
+                        <span className={styles.value}>{stockData.company.Country}</span>
+                      </div>
+                      <div className={styles.summaryItem}>
+                        <span className={styles.label}>Sector</span>
+                        <span className={styles.value}>{stockData.company.Sector}</span>
+                      </div>
+                      <div className={styles.summaryItem}>
+                        <span className={styles.label}>Industry</span>
+                        <span className={styles.value}>{stockData.company.Industry}</span>
+                      </div>
+                      {stockData.company.Website !== 'N/A' && (
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Website</span>
+                          <a
+                            href={stockData.company.Website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.value}
+                          >
+                            {stockData.company.Website}
+                          </a>
+                        </div>
+                      )}
+                      {stockData.company.Description && (
+                        <div className={`${styles.summaryItem} ${styles.fullWidth}`}>
+                          <span className={styles.label}>About</span>
+                          <p className={styles.description}>{stockData.company.Description}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {marketData && (
+                    <div className={styles.card}>
+                      <h2>Key Statistics</h2>
+                      <div className={styles.summaryGrid}>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Open</span>
+                          <span className={styles.value}>${marketData.open.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Previous Close</span>
+                          <span className={styles.value}>${marketData.prevClose.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Day High</span>
+                          <span className={styles.value}>${marketData.high.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Day Low</span>
+                          <span className={styles.value}>${marketData.low.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>52-Week High</span>
+                          <span className={styles.value}>${marketData.high52Week.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>52-Week Low</span>
+                          <span className={styles.value}>${marketData.low52Week.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Volume</span>
+                          <span className={styles.value}>{formatVolume(marketData.volume)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Avg Volume</span>
+                          <span className={styles.value}>{formatVolume(marketData.avgVolume)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'chart' && (
+            <div className={styles.chartSection}>
+              <div className={styles.card}>
                 <div className={styles.chartToolbar}>
                   <div className={styles.timeFilters}>
-                    {timeFilters.map(filter => (
-                      <button 
+                    {timeFilters.map((filter) => (
+                      <button
                         key={filter.id}
                         className={`${styles.filterBtn} ${activeTimeFilter === filter.id ? styles.active : ''}`}
-                        onClick={() => setActiveTimeFilter(filter.id)}
+                        onClick={() => handleTimeFilterChange(filter.id)}
                       >
                         {filter.name}
                       </button>
                     ))}
                   </div>
-                  <div className={styles.chartTools}>
-                    <button className={styles.btnIcon}>
-                      <i className={styles.iconIndicator}></i>
-                    </button>
-                    <button className={styles.btnIcon}>
-                      <i className={styles.iconFullscreen}></i>
-                    </button>
-                  </div>
                 </div>
                 <div className={styles.chartContainer}>
-                  {/* Chart component would go here */}
-                  <div className={styles.placeholderChart}>Chart for {activeTimeFilter} interval</div>
-                </div>
-              </div>
-
-              {/* Right side with summary and news */}
-              <div className={styles.sidebarContainer}>
-                <div className={styles.card}>
-                  <h2>Summary</h2>
-                  <div className={styles.summaryGrid}>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Market Cap</span>
-                      <span className={styles.value}>${stockData.financials.marketCap.toFixed(2)} T</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>P/E Ratio</span>
-                      <span className={styles.value}>{stockData.financials.peRatio}</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Dividend Yield</span>
-                      <span className={styles.value}>{stockData.financials.dividendYield}%</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>52-Week High</span>
-                      <span className={styles.value}>$207.35</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>52-Week Low</span>
-                      <span className={styles.value}>$162.14</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Avg. Volume</span>
-                      <span className={styles.value}>56.2M</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Beta</span>
-                      <span className={styles.value}>1.32</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Shares Outstanding</span>
-                      <span className={styles.value}>15.6B</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className={styles.card}>
-                  <h2>Recent News</h2>
-                  <div className={`${styles.newsList} ${styles.preview}`}>
-                    {stockData.news.slice(0, 4).map(article => (
-                      <div key={article.id} className={styles.newsItem}>
-                        <h3>{article.title}</h3>
-                        <p className={styles.newsMeta}>{article.source} • {article.date}</p>
-                        <p className={styles.newsSnippet}>{article.snippet.substring(0, 100)}...</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className={styles.buttonContainer}>
-                    <button 
-                      className={styles.btnOutline} 
-                      onClick={() => setActiveTab('news')}
-                    >
-                      All News
-                    </button>
-                  </div>
+                  {historicalData.length > 0 ? (
+                    <StockChart
+                      data={historicalData}
+                      color={stockData.color}
+                      isIntraday={isIntradayFilter(activeTimeFilter)}
+                    />
+                  ) : (
+                    <div className={styles.noData}>No data available</div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'chart' && (
-          <div className={styles.chartSection}>
-            <div className={styles.card}>
-              <div className={styles.chartToolbar}>
-                <div className={styles.timeFilters}>
-                  {timeFilters.map(filter => (
-                    <button 
-                      key={filter.id}
-                      className={`${styles.filterBtn} ${activeTimeFilter === filter.id ? styles.active : ''}`}
-                      onClick={() => setActiveTimeFilter(filter.id)}
-                    >
-                      {filter.name}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.chartTools}>
-                  <button className={styles.btnIcon}>
-                    <i className={styles.iconIndicator}></i>
-                  </button>
-                  <button className={styles.btnIcon}>
-                    <i className={styles.iconFullscreen}></i>
-                  </button>
-                </div>
-              </div>
-              <div className={styles.chartContainer}>
-                {/* Chart component would go here */}
-                <div className={styles.placeholderChart}>Chart for {activeTimeFilter} interval</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'news' && (
-          <div className={styles.newsSection}>
-            <div className={styles.card}>
-              <h2>News about {stockData.name}</h2>
-              <div className={`${styles.newsList} ${styles.full}`}>
-                {stockData.news.map(article => (
-                  <div key={article.id} className={styles.newsItem}>
-                    <h3>{article.title}</h3>
-                    <p className={styles.newsMeta}>{article.source} • {article.date}</p>
-                    <p className={styles.newsSnippet}>{article.snippet}</p>
-                    <a href={article.url} className={styles.newsLink}>Read more</a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'financials' && (
-          <div className={styles.financialsSection}>
-            <div className={styles.card}>
-              <h2>Financial Data</h2>
-              <div className={styles.financialsOverview}>
-                <div className={styles.financialChart}>
-                  {/* Financial chart would go here */}
-                  <div className={styles.placeholderChart}>Annual Revenue Chart</div>
-                </div>
-                <div className={styles.financialTable}>
-                  <h3>Annual Revenue (billions $)</h3>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Year</th>
-                        <th>Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stockData.financials.revenue.map(item => (
-                        <tr key={item.year}>
-                          <td>{item.year}{item.estimated ? ' (est.)' : ''}</td>
-                          <td>${item.value.toFixed(2)}B</td>
+          {activeTab === 'fundamentals' && (
+            <div className={styles.fundamentalsSection}>
+              <div className={styles.card}>
+                <h2>Company Profile</h2>
+                <div className={styles.companyProfile}>
+                  <div className={styles.profileInfo}>
+                    <table className={styles.infoTable}>
+                      <tbody>
+                        <tr>
+                          <td>Symbol:</td>
+                          <td><strong>{stockData.symbol}</strong></td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            
-            <div className={styles.card}>
-              <h2>Earnings Per Share (EPS)</h2>
-              <div className={styles.epsContainer}>
-                <div className={styles.epsChart}>
-                  {/* EPS chart would go here */}
-                  <div className={styles.placeholderChart}>EPS Chart</div>
-                </div>
-                <div className={styles.epsTable}>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Year</th>
-                        <th>EPS ($)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stockData.financials.eps.map(item => (
-                        <tr key={item.year}>
-                          <td>{item.year}{item.estimated ? ' (est.)' : ''}</td>
-                          <td>${item.value.toFixed(2)}</td>
+                        <tr>
+                          <td>Name:</td>
+                          <td><strong>{stockData.name}</strong></td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                        <tr>
+                          <td>Exchange:</td>
+                          <td>{stockData.company.Exchange}</td>
+                        </tr>
+                        <tr>
+                          <td>Country:</td>
+                          <td>{stockData.company.Country}</td>
+                        </tr>
+                        <tr>
+                          <td>Sector:</td>
+                          <td>{stockData.company.Sector}</td>
+                        </tr>
+                        <tr>
+                          <td>Industry:</td>
+                          <td>{stockData.company.Industry}</td>
+                        </tr>
+                        {stockData.company.Website !== 'N/A' && (
+                          <tr>
+                            <td>Website:</td>
+                            <td>
+                              <a
+                                href={stockData.company.Website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {stockData.company.Website}
+                              </a>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className={styles.companyDescription}>
+                    <h3>About {stockData.name}</h3>
+                    <p>{stockData.company.Description}</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'analysis' && (
-          <div className={styles.analysisSection}>
-            <div className={styles.card}>
-              <h2>Analyst Recommendations</h2>
-              <div className={styles.analystRecommendations}>
-                <div className={styles.recommendationSummary}>
-                  <div className={styles.recommendationScore}>
-                    <div className={styles.score}>4.2</div>
-                    <div className={styles.scoreLabel}>out of 5</div>
-                  </div>
-                  <div className={styles.recommendationText}>Buy</div>
+          {activeTab === 'market-data' && marketData && (
+            <div className={styles.marketDataSection}>
+              {refreshStatus && (
+                <div className={styles.refreshStatus}>
+                  <p>{refreshStatus}</p>
+                  {isRefreshing && <div className={styles.miniSpinner}></div>}
                 </div>
-                <div className={styles.recommendationBreakdown}>
-                  <div className={styles.recommendationBar}>
-                    <div className={styles.label}>Strong Buy</div>
-                    <div className={styles.barContainer}>
-                      <div className={styles.bar} style={{width: '45%'}}></div>
-                      <div className={styles.percentage}>45%</div>
-                    </div>
+              )}
+              <div className={styles.cardRow}>
+                <div className={styles.card}>
+                  <h2>Daily Trading Information</h2>
+                  <div className={styles.infoTable}>
+                    <table className={styles.fullWidthTable}>
+                      <tbody>
+                        <tr>
+                          <td>Open</td>
+                          <td>${marketData.open.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td>High</td>
+                          <td>${marketData.high.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td>Low</td>
+                          <td>${marketData.low.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td>Previous Close</td>
+                          <td>${marketData.prevClose.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td>Current</td>
+                          <td>${stockData.currentPrice.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td>Change</td>
+                          <td className={stockData.isPositive ? styles.positive : styles.negative}>
+                            {stockData.isPositive ? '+' : ''}
+                            {stockData.priceChange.toFixed(2)} (
+                            {Math.abs(stockData.changePercent).toFixed(2)}%)
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                  <div className={styles.recommendationBar}>
-                    <div className={styles.label}>Buy</div>
-                    <div className={styles.barContainer}>
-                      <div className={styles.bar} style={{width: '30%'}}></div>
-                      <div className={styles.percentage}>30%</div>
-                    </div>
-                  </div>
-                  <div className={styles.recommendationBar}>
-                    <div className={styles.label}>Hold</div>
-                    <div className={styles.barContainer}>
-                      <div className={styles.bar} style={{width: '20%'}}></div>
-                      <div className={styles.percentage}>20%</div>
-                    </div>
-                  </div>
-                  <div className={styles.recommendationBar}>
-                    <div className={styles.label}>Sell</div>
-                    <div className={styles.barContainer}>
-                      <div className={styles.bar} style={{width: '5%'}}></div>
-                      <div className={styles.percentage}>5%</div>
-                    </div>
-                  </div>
-                  <div className={styles.recommendationBar}>
-                    <div className={styles.label}>Strong Sell</div>
-                    <div className={styles.barContainer}>
-                      <div className={styles.bar} style={{width: '0%'}}></div>
-                      <div className={styles.percentage}>0%</div>
-                    </div>
+                </div>
+
+                <div className={styles.card}>
+                  <h2>Volume Information</h2>
+                  <div className={styles.infoTable}>
+                    <table className={styles.fullWidthTable}>
+                      <tbody>
+                        <tr>
+                          <td>Today&apos;s Volume</td>
+                          <td>{formatVolume(marketData.volume)}</td>
+                        </tr>
+                        <tr>
+                          <td>Average Volume (30 days)</td>
+                          <td>{formatVolume(marketData.avgVolume)}</td>
+                        </tr>
+                        <tr>
+                          <td>Relative Volume</td>
+                          <td>
+                            {marketData.avgVolume > 0
+                              ? (marketData.volume / marketData.avgVolume).toFixed(2)
+                              : 'N/A'}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <div className={styles.card}>
-              <h2>Price Targets</h2>
-              <div className={styles.priceTargets}>
-                <div className={styles.priceRange}>
+
+              <div className={styles.cardRow}>
+                <div className={styles.card}>
+                  <h2>52-Week Range</h2>
                   <div className={styles.rangeContainer}>
-                    <div className={styles.currentMarker} style={{left: '35%'}}></div>
-                    <div className={styles.rangeBar}></div>
-                    <div className={styles.lowPrice}>$155</div>
-                    <div className={styles.highPrice}>$230</div>
-                  </div>
-                  <div className={styles.currentPriceIndicator}>
-                    <div className={styles.label}>Current Price</div>
-                    <div className={styles.value}>${stockData.currentPrice.toFixed(2)}</div>
+                    <div className={styles.rangeBars}>
+                      <div className={styles.rangeBar}>
+                        <div className={styles.rangeBarInner}>
+                          <div
+                            className={styles.rangeBarFill}
+                            style={{
+                              width: `${((stockData.currentPrice - marketData.low52Week) / (marketData.high52Week - marketData.low52Week)) * 100 || 0}%`,
+                            }}
+                          ></div>
+                          <div
+                            className={styles.rangeBarMarker}
+                            style={{
+                              left: `${((stockData.currentPrice - marketData.low52Week) / (marketData.high52Week - marketData.low52Week)) * 100 || 0}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.rangeLabels}>
+                      <div className={styles.rangeLow}>${marketData.low52Week.toFixed(2)}</div>
+                      <div className={styles.rangeValue}>${stockData.currentPrice.toFixed(2)}</div>
+                      <div className={styles.rangeHigh}>${marketData.high52Week.toFixed(2)}</div>
+                    </div>
                   </div>
                 </div>
-                <div className={styles.targetSummary}>
-                  <div className={styles.targetItem}>
-                    <div className={styles.label}>Average Target</div>
-                    <div className={styles.value}>$198.45</div>
-                  </div>
-                  <div className={styles.targetItem}>
-                    <div className={styles.label}>High Target</div>
-                    <div className={styles.value}>$230.00</div>
-                  </div>
-                  <div className={styles.targetItem}>
-                    <div className={styles.label}>Low Target</div>
-                    <div className={styles.value}>$155.00</div>
-                  </div>
-                  <div className={styles.targetItem}>
-                    <div className={styles.label}>Potential Growth</div>
-                    <div className={`${styles.value} ${styles.positive}`}>+11.04%</div>
+              </div>
+
+              <div className={styles.card}>
+                <h2>Historical Performance</h2>
+                <div className={styles.performanceGrid}>
+                  <div className={styles.performanceTable}>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Period</th>
+                          <th>Change</th>
+                          <th>% Change</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>1 Day</td>
+                          <td className={performanceData.day.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.day.change >= 0 ? '+' : ''}$
+                            {Math.abs(performanceData.day.change).toFixed(2)}
+                          </td>
+                          <td className={performanceData.day.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.day.change >= 0 ? '+' : ''}
+                            {Math.abs(performanceData.day.percentChange).toFixed(2)}%
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>1 Week</td>
+                          <td className={performanceData.week.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.week.change >= 0 ? '+' : ''}$
+                            {Math.abs(performanceData.week.change).toFixed(2)}
+                          </td>
+                          <td className={performanceData.week.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.week.change >= 0 ? '+' : ''}
+                            {Math.abs(performanceData.week.percentChange).toFixed(2)}%
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>1 Month</td>
+                          <td className={performanceData.month.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.month.change >= 0 ? '+' : ''}$
+                            {Math.abs(performanceData.month.change).toFixed(2)}
+                          </td>
+                          <td className={performanceData.month.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.month.change >= 0 ? '+' : ''}
+                            {Math.abs(performanceData.month.percentChange).toFixed(2)}%
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>3 Months</td>
+                          <td className={performanceData.threeMonths.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.threeMonths.change >= 0 ? '+' : ''}$
+                            {Math.abs(performanceData.threeMonths.change).toFixed(2)}
+                          </td>
+                          <td className={performanceData.threeMonths.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.threeMonths.change >= 0 ? '+' : ''}
+                            {Math.abs(performanceData.threeMonths.percentChange).toFixed(2)}%
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>6 Months</td>
+                          <td className={performanceData.sixMonths.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.sixMonths.change >= 0 ? '+' : ''}$
+                            {Math.abs(performanceData.sixMonths.change).toFixed(2)}
+                          </td>
+                          <td className={performanceData.sixMonths.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.sixMonths.change >= 0 ? '+' : ''}
+                            {Math.abs(performanceData.sixMonths.percentChange).toFixed(2)}%
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>1 Year</td>
+                          <td className={performanceData.year.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.year.change >= 0 ? '+' : ''}$
+                            {Math.abs(performanceData.year.change).toFixed(2)}
+                          </td>
+                          <td className={performanceData.year.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.year.change >= 0 ? '+' : ''}
+                            {Math.abs(performanceData.year.percentChange).toFixed(2)}%
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>5 Years</td>
+                          <td className={performanceData.fiveYears.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.fiveYears.change >= 0 ? '+' : ''}$
+                            {Math.abs(performanceData.fiveYears.change).toFixed(2)}
+                          </td>
+                          <td className={performanceData.fiveYears.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.fiveYears.change >= 0 ? '+' : ''}
+                            {Math.abs(performanceData.fiveYears.percentChange).toFixed(2)}%
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>YTD</td>
+                          <td className={performanceData.ytd.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.ytd.change >= 0 ? '+' : ''}$
+                            {Math.abs(performanceData.ytd.change).toFixed(2)}
+                          </td>
+                          <td className={performanceData.ytd.change >= 0 ? styles.positive : styles.negative}>
+                            {performanceData.ytd.change >= 0 ? '+' : ''}
+                            {Math.abs(performanceData.ytd.percentChange).toFixed(2)}%
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
             </div>
+          )}
+        </div>
+
+        <div className={styles.tradingActions}>
+          <button className={styles.setAlertButton}>Set Price Alert</button>
+        </div>
+
+        <div className={styles.newsSection}>
+          <h2>Recent News</h2>
+          <div className={styles.newsPlaceholder}>
+            <p>News data would be available with premium API access.</p>
           </div>
-        )}
+        </div>
       </div>
-    </div>
-  );
-};
+    </ApiErrorBoundary>
+  )
+}
 
-// PropTypes for property validation
 StockDetail.propTypes = {
-  stockSymbol: PropTypes.string
-};
+  stockSymbolProp: PropTypes.string,
+}
 
-// Default props
 StockDetail.defaultProps = {
-  stockSymbol: "AAPL"
-};
+  stockSymbolProp: '',
+}
 
-export default StockDetail;
+export default StockDetail
