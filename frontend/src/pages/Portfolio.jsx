@@ -1,75 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../components/AuthContext';
+import api from '../services/axios';
 import styles from '../styles/Portfolio.module.css';
 
 const Portfolio = () => {
-  const [portfolioData, setPortfolioData] = useState({
-    totalValue: 85432.67,
-    dailyChange: 1.35,
-    assets: [
-      { 
-        symbol: 'AAPL', 
-        name: 'Apple Inc.', 
-        price: 178.72, 
-        quantity: 15, 
-        value: 2680.80, 
-        changePercent: 1.25,
-        allocation: 12,
-        color: '#0088FE'
-      },
-      { 
-        symbol: 'GOOGL', 
-        name: 'Alphabet Inc.', 
-        price: 142.17, 
-        quantity: 10, 
-        value: 1421.70, 
-        changePercent: 0.87,
-        allocation: 8,
-        color: '#00C49F'
-      },
-      { 
-        symbol: 'MSFT', 
-        name: 'Microsoft Corp.', 
-        price: 413.56, 
-        quantity: 25, 
-        value: 10339.00, 
-        changePercent: 0.63,
-        allocation: 28,
-        color: '#FFBB28'
-      },
-      { 
-        symbol: 'AMZN', 
-        name: 'Amazon.com Inc.', 
-        price: 180.85, 
-        quantity: 18, 
-        value: 3255.30, 
-        changePercent: 1.42,
-        allocation: 14,
-        color: '#FF8042'
-      },
-      { 
-        symbol: 'BTC', 
-        name: 'Bitcoin', 
-        price: 61245.30, 
-        quantity: 0.7, 
-        value: 42871.71, 
-        changePercent: 2.15,
-        allocation: 38,
-        color: '#9146FF'
-      }
-    ],
-    transactions: [
-      { id: 1, date: '2025-03-15', type: 'Cumpărare', symbol: 'AAPL', quantity: 5, price: 175.32, total: 876.60 },
-      { id: 2, date: '2025-03-10', type: 'Vânzare', symbol: 'MSFT', quantity: 2, price: 410.25, total: 820.50 },
-      { id: 3, date: '2025-03-05', type: 'Cumpărare', symbol: 'BTC', quantity: 0.2, price: 59320.45, total: 11864.09 },
-      { id: 4, date: '2025-03-01', type: 'Cumpărare', symbol: 'AMZN', quantity: 3, price: 178.65, total: 535.95 },
-      { id: 5, date: '2025-02-25', type: 'Vânzare', symbol: 'GOOGL', quantity: 2, price: 140.35, total: 280.70 },
-    ]
-  });
+  // Use only isAuthenticated from context
+  const { isAuthenticated } = useContext(AuthContext);
 
+  // State for portfolio data
+  const [portfolioData, setPortfolioData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
   const [activeFilter, setActiveFilter] = useState('all');
   const [screenSize, setScreenSize] = useState('large');
 
-  // Detectare dimensiune ecran și setare mod de afișare
+  // Get portfolio data from backend
+  useEffect(() => {
+    const fetchPortfolioData = async () => {
+      try {
+        if (isAuthenticated) {
+          const response = await api.get('/portfolio');
+          setPortfolioData(response.data);
+        }
+      } catch (err) {
+        console.error('Error details:', err);
+        
+        if (err.response) {
+          // Server responded with status code outside of 2xx range
+          console.error('Response status:', err.response.status);
+          console.error('Response data:', err.response.data);
+          setError(`Server error: ${err.response.status} - ${err.response.data.message || 'Unknown error'}`);
+        } else if (err.request) {
+          // Request was made but no response received
+          console.error('No response received:', err.request);
+          setError('No response from server. Please check your connection.');
+        } else {
+          // Something happened in setting up the request
+          console.error('Request error:', err.message);
+          setError(`Request error: ${err.message}`);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPortfolioData();
+  }, [isAuthenticated]);
+
+  // Screen size detection and display mode setting
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
@@ -84,13 +63,13 @@ const Portfolio = () => {
       }
     };
     
-    handleResize(); // Verifică la încărcare
+    handleResize(); // Check on load
     window.addEventListener('resize', handleResize);
     
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Adaptează coloanele afișate în funcție de dimensiunea ecranului
+  // Adapt displayed columns based on screen size
   const getVisibleColumns = () => {
     if (screenSize === 'xsmall') {
       return {
@@ -133,17 +112,55 @@ const Portfolio = () => {
 
   const columns = getVisibleColumns();
   
-  // Componenta pentru sumarul portofoliului
+  // Display loading state
+  if (loading) {
+    return (
+      <div className={styles.dashboardContainer}>
+        <div className={styles.container}>
+          <div className={styles.loadingMessage}>Loading portfolio data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Display error message if there are issues
+  if (error) {
+    return (
+      <div className={styles.dashboardContainer}>
+        <div className={styles.container}>
+          <div className={styles.errorMessage}>{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // If no data is available
+  if (!portfolioData) {
+    return (
+      <div className={styles.dashboardContainer}>
+        <div className={styles.container}>
+          <div className={styles.emptyMessage}>No portfolio data available. Add assets to get started.</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if there are assets or if it's an empty portfolio
+  const hasAssets = portfolioData.assets && portfolioData.assets.length > 0;
+  const hasTransactions = portfolioData.transactions && portfolioData.transactions.length > 0;
+  const hasAlerts = portfolioData.alerts && portfolioData.alerts.length > 0;
+  
+  // Component for portfolio summary
   const PortfolioSummary = () => (
     <div className={styles.portfolioSummary}>
-      <h1 className={styles.h1}>Portofoliul meu</h1>
+      <h1 className={styles.h1}>My Portfolio</h1>
       <div className={`${styles.flexBetween} ${styles.summaryContent}`}>
         <div>
-          <p className={styles.textSecondary}>Valoare totală</p>
+          <p className={styles.textSecondary}>Total Value</p>
           <h2 className={styles.portfolioTotal}>${portfolioData.totalValue.toLocaleString()}</h2>
         </div>
         <div className={styles.textRight}>
-          <p className={styles.textSecondary}>Schimbare zilnică</p>
+          <p className={styles.textSecondary}>Daily Change</p>
           <p className={`${styles.portfolioChange} ${portfolioData.dailyChange >= 0 ? styles.textSuccess : styles.textDanger}`}>
             {portfolioData.dailyChange >= 0 ? '+' : ''}{portfolioData.dailyChange}%
           </p>
@@ -152,9 +169,23 @@ const Portfolio = () => {
     </div>
   );
 
-  // Componenta pentru alocarea activelor
+  // Component for asset allocation
   const AssetAllocation = () => {
-    // Calculează și formatează stilul pentru conic-gradient
+    // If there are no assets, display a message
+    if (!hasAssets) {
+      return (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h3 className={styles.h3}>Asset Allocation</h3>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.emptyMessage}>You don&apos;t have any assets in your portfolio.</div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Calculate and format style for conic-gradient
     const pieChartStyle = () => {
       const gradientParts = portfolioData.assets.map((asset, index, array) => {
         const startPercent = array.slice(0, index).reduce((sum, a) => sum + a.allocation, 0);
@@ -172,11 +203,9 @@ const Portfolio = () => {
     return (
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <h3 className={styles.h3}>Alocarea activelor</h3>
+          <h3 className={styles.h3}>Asset Allocation</h3>
         </div>
-        {/* Modificare aici: Am eliminat clasa allocationChart de pe cardBody */}
         <div className={styles.cardBody}>
-          {/* Adăugat container separat pentru conținutul de alocare */}
           <div className={styles.allocationChart}>
             <div className={styles.pieChartContainer}>
               <div 
@@ -195,45 +224,17 @@ const Portfolio = () => {
                 </div>
               ))}
               
-              {screenSize !== 'xsmall' && (
-                <>
-                  <div className={styles.legendItem}>
+              {screenSize !== 'xsmall' && portfolioData.otherAssets && portfolioData.otherAssets.length > 0 && 
+                portfolioData.otherAssets.map((asset, index) => (
+                  <div key={`other-${index}`} className={styles.legendItem}>
                     <div className={styles.flexCenter}>
-                      <div className={styles.colorIndicator} style={{ backgroundColor: '#6A5ACD' }}></div>
-                      <span>ETF</span>
+                      <div className={styles.colorIndicator} style={{ backgroundColor: asset.color }}></div>
+                      <span>{asset.symbol}</span>
                     </div>
-                    <span>5%</span>
+                    <span>{asset.allocation}%</span>
                   </div>
-                  <div className={styles.legendItem}>
-                    <div className={styles.flexCenter}>
-                      <div className={styles.colorIndicator} style={{ backgroundColor: '#20B2AA' }}></div>
-                      <span>BOND</span>
-                    </div>
-                    <span>3%</span>
-                  </div>
-                  <div className={styles.legendItem}>
-                    <div className={styles.flexCenter}>
-                      <div className={styles.colorIndicator} style={{ backgroundColor: '#FF6347' }}></div>
-                      <span>REAL</span>
-                    </div>
-                    <span>2%</span>
-                  </div>
-                  <div className={styles.legendItem}>
-                    <div className={styles.flexCenter}>
-                      <div className={styles.colorIndicator} style={{ backgroundColor: '#FFA500' }}></div>
-                      <span>GOLD</span>
-                    </div>
-                    <span>2%</span>
-                  </div>
-                  <div className={styles.legendItem}>
-                    <div className={styles.flexCenter}>
-                      <div className={styles.colorIndicator} style={{ backgroundColor: '#4682B4' }}></div>
-                      <span>CASH</span>
-                    </div>
-                    <span>1%</span>
-                  </div>
-                </>
-              )}
+                ))
+              }
             </div>
           </div>
         </div>
@@ -241,115 +242,125 @@ const Portfolio = () => {
     );
   };
 
-  // Componenta pentru performanță
-  const Performance = () => (
-    <div className={styles.card}>
-      <div className={styles.cardHeader}>
-        <h3 className={styles.h3}>Performanță</h3>
-      </div>
-      <div className={styles.cardBody}>
-        <div className={styles.progressContainer}>
-          <div className={styles.progressLabel}>
-            <span>Astăzi</span>
-            <span className={styles.textSuccess}>+1.35%</span>
+  // Component for performance
+  const Performance = () => {
+    if (!portfolioData.performance || portfolioData.performance.length === 0) {
+      return (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h3 className={styles.h3}>Performance</h3>
           </div>
-          <div className={styles.progressBar}>
-            <div className={`${styles.progressFill} ${styles.progressFillSuccess}`} style={{ width: '60%' }}></div>
+          <div className={styles.cardBody}>
+            <div className={styles.emptyMessage}>No performance data available.</div>
           </div>
         </div>
-        <div className={styles.progressContainer}>
-          <div className={styles.progressLabel}>
-            <span>Săptămâna aceasta</span>
-            <span className={styles.textSuccess}>+3.72%</span>
-          </div>
-          <div className={styles.progressBar}>
-            <div className={`${styles.progressFill} ${styles.progressFillSuccess}`} style={{ width: '78%' }}></div>
-          </div>
+      );
+    }
+    
+    return (
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <h3 className={styles.h3}>Performance</h3>
         </div>
-        <div className={styles.progressContainer}>
-          <div className={styles.progressLabel}>
-            <span>Luna aceasta</span>
-            <span className={styles.textSuccess}>+8.45%</span>
-          </div>
-          <div className={styles.progressBar}>
-            <div className={`${styles.progressFill} ${styles.progressFillSuccess}`} style={{ width: '85%' }}></div>
-          </div>
-        </div>
-        <div className={styles.progressContainer}>
-          <div className={styles.progressLabel}>
-            <span>Anual</span>
-            <span className={styles.textDanger}>-2.15%</span>
-          </div>
-          <div className={styles.progressBar}>
-            <div className={`${styles.progressFill} ${styles.progressFillDanger}`} style={{ width: '35%' }}></div>
-          </div>
-        </div>
-        <div className={styles.progressContainer}>
-          <div className={styles.progressLabel}>
-            <span>Total</span>
-            <span className={styles.textSuccess}>+24.67%</span>
-          </div>
-          <div className={styles.progressBar}>
-            <div className={`${styles.progressFill} ${styles.progressFillSuccess}`} style={{ width: '92%' }}></div>
-          </div>
+        <div className={styles.cardBody}>
+          {portfolioData.performance.map((period, index) => (
+            <div key={index} className={styles.progressContainer}>
+              <div className={styles.progressLabel}>
+                <span>{period.label}</span>
+                <span className={period.value >= 0 ? styles.textSuccess : styles.textDanger}>
+                  {period.value >= 0 ? '+' : ''}{period.value}%
+                </span>
+              </div>
+              <div className={styles.progressBar}>
+                <div 
+                  className={`${styles.progressFill} ${period.value >= 0 ? styles.progressFillSuccess : styles.progressFillDanger}`} 
+                  style={{ width: `${Math.min(Math.abs(period.value) * 5, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  // AssetList modificat pentru a fi complet responsive
-  const AssetList = () => (
-    <div className={styles.card}>
-      <div className={styles.cardHeader}>
-        <h3 className={styles.h3}>Active</h3>
-        <button className={`${styles.btn} ${styles.btnPrimary}`}>
-          Adaugă active
-        </button>
-      </div>
-      
-      <div className={`${styles.cardBody} ${styles.assetsTable}`}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              {columns.showSymbol && <th className={styles.th}>Simbol</th>}
-              {columns.showName && <th className={styles.th}>Nume</th>}
-              {columns.showPrice && <th className={`${styles.th} ${styles.textRight}`}>Preț</th>}
-              {columns.showQuantity && <th className={`${styles.th} ${styles.textRight}`}>Cantitate</th>}
-              {columns.showValue && <th className={`${styles.th} ${styles.textRight}`}>Valoare</th>}
-              {columns.showChange && <th className={`${styles.th} ${styles.textRight}`}>Schimbare</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {portfolioData.assets.map((asset, index) => (
-              <tr key={index}>
-                {columns.showSymbol && (
-                  <td className={styles.td}>
-                    <div className={styles.flexCenter}>
-                      <div className={styles.assetIcon} style={{ backgroundColor: asset.color }}>
-                        {asset.symbol.charAt(0)}
-                      </div>
-                      <span className={styles.assetSymbol}>{asset.symbol}</span>
-                    </div>
-                  </td>
-                )}
-                {columns.showName && <td className={styles.td}>{asset.name}</td>}
-                {columns.showPrice && <td className={`${styles.td} ${styles.textRight}`}>${asset.price.toLocaleString()}</td>}
-                {columns.showQuantity && <td className={`${styles.td} ${styles.textRight}`}>{asset.quantity}</td>}
-                {columns.showValue && <td className={`${styles.td} ${styles.textRight}`}>${asset.value.toLocaleString()}</td>}
-                {columns.showChange && (
-                  <td className={`${styles.td} ${styles.textRight} ${asset.changePercent >= 0 ? styles.textSuccess : styles.textDanger}`}>
-                    {asset.changePercent >= 0 ? '+' : ''}{asset.changePercent}%
-                  </td>
-                )}
+  // AssetList modified to be fully responsive
+  const AssetList = () => {
+    if (!hasAssets) {
+      return (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h3 className={styles.h3}>Assets</h3>
+            <button 
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              onClick={() => window.location.href = '/add-asset'}
+            >
+              Add Assets
+            </button>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.emptyMessage}>You don&apos;t have any assets in your portfolio. Click &quot;Add Assets&quot; to get started.</div>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <h3 className={styles.h3}>Assets</h3>
+          <button 
+            className={`${styles.btn} ${styles.btnPrimary}`}
+            onClick={() => window.location.href = '/add-asset'}
+          >
+            Add Assets
+          </button>
+        </div>
+        
+        <div className={`${styles.cardBody} ${styles.assetsTable}`}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                {columns.showSymbol && <th className={styles.th}>Symbol</th>}
+                {columns.showName && <th className={styles.th}>Name</th>}
+                {columns.showPrice && <th className={`${styles.th} ${styles.textRight}`}>Price</th>}
+                {columns.showQuantity && <th className={`${styles.th} ${styles.textRight}`}>Quantity</th>}
+                {columns.showValue && <th className={`${styles.th} ${styles.textRight}`}>Value</th>}
+                {columns.showChange && <th className={`${styles.th} ${styles.textRight}`}>Change</th>}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {portfolioData.assets.map((asset, index) => (
+                <tr key={index}>
+                  {columns.showSymbol && (
+                    <td className={styles.td}>
+                      <div className={styles.flexCenter}>
+                        <div className={styles.assetIcon} style={{ backgroundColor: asset.color }}>
+                          {asset.symbol.charAt(0)}
+                        </div>
+                        <span className={styles.assetSymbol}>{asset.symbol}</span>
+                      </div>
+                    </td>
+                  )}
+                  {columns.showName && <td className={styles.td}>{asset.name}</td>}
+                  {columns.showPrice && <td className={`${styles.td} ${styles.textRight}`}>${asset.price.toLocaleString()}</td>}
+                  {columns.showQuantity && <td className={`${styles.td} ${styles.textRight}`}>{asset.quantity}</td>}
+                  {columns.showValue && <td className={`${styles.td} ${styles.textRight}`}>${asset.value.toLocaleString()}</td>}
+                  {columns.showChange && (
+                    <td className={`${styles.td} ${styles.textRight} ${asset.changePercent >= 0 ? styles.textSuccess : styles.textDanger}`}>
+                      {asset.changePercent >= 0 ? '+' : ''}{asset.changePercent}%
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  // Transactions modificat pentru a fi complet responsive
+  // Transactions modified to be fully responsive
   const Transactions = () => {
     const txColumns = screenSize === 'xsmall' ? 
       { date: true, type: true, symbol: true, quantity: false, price: false, total: true } :
@@ -357,28 +368,61 @@ const Portfolio = () => {
       { date: true, type: true, symbol: true, quantity: false, price: false, total: true } :
       { date: true, type: true, symbol: true, quantity: true, price: true, total: true };
     
+    if (!hasTransactions) {
+      return (
+        <div className={`${styles.card} ${styles.transactionsCard}`}>
+          <div className={styles.cardHeader}>
+            <h3 className={styles.h3}>Recent Transactions</h3>
+            <div className={styles.filterButtons}>
+              <button 
+                className={`${styles.btnFilter} ${activeFilter === 'all' ? styles.active : ''}`}
+                onClick={() => setActiveFilter('all')}
+              >
+                All
+              </button>
+              <button 
+                className={`${styles.btnFilter} ${activeFilter === 'buy' ? styles.active : ''}`}
+                onClick={() => setActiveFilter('buy')}
+              >
+                Buys
+              </button>
+              <button 
+                className={`${styles.btnFilter} ${activeFilter === 'sell' ? styles.active : ''}`}
+                onClick={() => setActiveFilter('sell')}
+              >
+                Sells
+              </button>
+            </div>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.emptyMessage}>No recent transactions.</div>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className={`${styles.card} ${styles.transactionsCard}`}>
         <div className={styles.cardHeader}>
-          <h3 className={styles.h3}>Tranzacții recente</h3>
+          <h3 className={styles.h3}>Recent Transactions</h3>
           <div className={styles.filterButtons}>
             <button 
               className={`${styles.btnFilter} ${activeFilter === 'all' ? styles.active : ''}`}
               onClick={() => setActiveFilter('all')}
             >
-              Toate
+              All
             </button>
             <button 
               className={`${styles.btnFilter} ${activeFilter === 'buy' ? styles.active : ''}`}
               onClick={() => setActiveFilter('buy')}
             >
-              Cumpărări
+              Buys
             </button>
             <button 
               className={`${styles.btnFilter} ${activeFilter === 'sell' ? styles.active : ''}`}
               onClick={() => setActiveFilter('sell')}
             >
-              Vânzări
+              Sells
             </button>
           </div>
         </div>
@@ -387,11 +431,11 @@ const Portfolio = () => {
           <table className={styles.table}>
             <thead>
               <tr>
-                {txColumns.date && <th className={styles.th}>Data</th>}
-                {txColumns.type && <th className={styles.th}>Tip</th>}
-                {txColumns.symbol && <th className={styles.th}>Simbol</th>}
-                {txColumns.quantity && <th className={`${styles.th} ${styles.textRight}`}>Cantitate</th>}
-                {txColumns.price && <th className={`${styles.th} ${styles.textRight}`}>Preț</th>}
+                {txColumns.date && <th className={styles.th}>Date</th>}
+                {txColumns.type && <th className={styles.th}>Type</th>}
+                {txColumns.symbol && <th className={styles.th}>Symbol</th>}
+                {txColumns.quantity && <th className={`${styles.th} ${styles.textRight}`}>Quantity</th>}
+                {txColumns.price && <th className={`${styles.th} ${styles.textRight}`}>Price</th>}
                 {txColumns.total && <th className={`${styles.th} ${styles.textRight}`}>Total</th>}
               </tr>
             </thead>
@@ -399,15 +443,15 @@ const Portfolio = () => {
               {portfolioData.transactions
                 .filter(transaction => {
                   if (activeFilter === 'all') return true;
-                  if (activeFilter === 'buy') return transaction.type === 'Cumpărare';
-                  if (activeFilter === 'sell') return transaction.type === 'Vânzare';
+                  if (activeFilter === 'buy') return transaction.type === 'Buy';
+                  if (activeFilter === 'sell') return transaction.type === 'Sell';
                   return true;
                 })
                 .map((transaction) => (
                   <tr key={transaction.id}>
                     {txColumns.date && <td className={styles.td}>{transaction.date}</td>}
                     {txColumns.type && (
-                      <td className={`${styles.td} ${transaction.type === 'Cumpărare' ? styles.textSuccess : styles.textDanger}`}>
+                      <td className={`${styles.td} ${transaction.type === 'Buy' ? styles.textSuccess : styles.textDanger}`}>
                         {transaction.type}
                       </td>
                     )}
@@ -424,18 +468,46 @@ const Portfolio = () => {
     );
   };
 
-  // Componenta pentru Top Performeri
-  const TopPerformers = () => (
-    <div className={styles.card}>
-      <div className={styles.cardHeader}>
-        <h3 className={styles.h3}>Top Performeri</h3>
-      </div>
-      <div className={styles.cardBody}>
-        {portfolioData.assets
-          .slice()
-          .sort((a, b) => b.changePercent - a.changePercent)
-          .slice(0, 3)
-          .map((asset, index) => (
+  // Component for Top Performers
+  const TopPerformers = () => {
+    if (!hasAssets) {
+      return (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h3 className={styles.h3}>Top Performers</h3>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.emptyMessage}>You don&apos;t have any assets in your portfolio.</div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Sort assets by percentage performance
+    const topAssets = [...portfolioData.assets]
+      .sort((a, b) => b.changePercent - a.changePercent)
+      .slice(0, 3);
+      
+    if (topAssets.length === 0) {
+      return (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h3 className={styles.h3}>Top Performers</h3>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.emptyMessage}>Not enough data available.</div>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <h3 className={styles.h3}>Top Performers</h3>
+        </div>
+        <div className={styles.cardBody}>
+          {topAssets.map((asset, index) => (
             <div key={index} className={styles.topPerformer}>
               <div className={styles.flexBetween}>
                 <div className={styles.flexCenter}>
@@ -449,82 +521,95 @@ const Portfolio = () => {
                 </div>
                 <div className={styles.textRight}>
                   <div>${asset.price.toLocaleString()}</div>
-                  <div className={styles.textSuccess}>+{asset.changePercent}%</div>
+                  <div className={asset.changePercent >= 0 ? styles.textSuccess : styles.textDanger}>
+                    {asset.changePercent >= 0 ? '+' : ''}{asset.changePercent}%
+                  </div>
                 </div>
               </div>
             </div>
           ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  // Componenta pentru Alerte
-  const Alerts = () => (
-    <div className={styles.card}>
-      <div className={styles.cardHeader}>
-        <h3 className={styles.h3}>Alerte</h3>
-      </div>
-      <div className={styles.cardBody}>
-        <div className={styles.alert}>
-          <div className={`${styles.alertDot} ${styles.alertDotSuccess}`}></div>
-          <div className={styles.alertContent}>
-            <div className={styles.alertTitle}>BTC a depășit $60,000</div>
-            <div className={styles.alertTime}>Acum 2 ore</div>
+  // Component for Alerts
+  const Alerts = () => {
+    if (!hasAlerts) {
+      return (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h3 className={styles.h3}>Alerts</h3>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.emptyMessage}>You don&apos;t have any new alerts.</div>
           </div>
         </div>
-        <div className={styles.alert}>
-          <div className={`${styles.alertDot} ${styles.alertDotDanger}`}></div>
-          <div className={styles.alertContent}>
-            <div className={styles.alertTitle}>MSFT a scăzut cu 0.5%</div>
-            <div className={styles.alertTime}>Acum 5 ore</div>
-          </div>
+      );
+    }
+    
+    return (
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <h3 className={styles.h3}>Alerts</h3>
         </div>
-        <div className={styles.alert}>
-          <div className={`${styles.alertDot} ${styles.alertDotSuccess}`}></div>
-          <div className={styles.alertContent}>
-            <div className={styles.alertTitle}>AAPL a crescut cu 1.25%</div>
-            <div className={styles.alertTime}>Acum 8 ore</div>
-          </div>
-        </div>
-        <div className={styles.alert}>
-          <div className={`${styles.alertDot} ${styles.alertDotSuccess}`}></div>
-          <div className={styles.alertContent}>
-            <div className={styles.alertTitle}>AMZN a crescut cu 1.42%</div>
-            <div className={styles.alertTime}>Acum 9 ore</div>
-          </div>
+        <div className={styles.cardBody}>
+          {portfolioData.alerts.map((alert, index) => (
+            <div key={index} className={styles.alert}>
+              <div className={`${styles.alertDot} ${alert.type === 'success' ? styles.alertDotSuccess : styles.alertDotDanger}`}></div>
+              <div className={styles.alertContent}>
+                <div className={styles.alertTitle}>{alert.message}</div>
+                <div className={styles.alertTime}>{alert.time}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  // Componenta pentru Acțiuni Rapide
+  // Component for Quick Actions
   const QuickActions = () => (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <h3 className={styles.h3}>Acțiuni rapide</h3>
+        <h3 className={styles.h3}>Quick Actions</h3>
       </div>
       <div className={styles.cardBody}>
         <div className={styles.quickActions}>
-          <button className={`${styles.btn} ${styles.btnAction}`}>
+          <button 
+            className={`${styles.btn} ${styles.btnAction}`}
+            onClick={() => window.location.href = '/deposit'}
+          >
             <span className={styles.actionIcon}>💰</span>
-            <span>Depozit</span>
+            <span>Deposit</span>
           </button>
-          <button className={`${styles.btn} ${styles.btnAction}`}>
+          <button 
+            className={`${styles.btn} ${styles.btnAction}`}
+            onClick={() => window.location.href = '/transfer'}
+          >
             <span className={styles.actionIcon}>🔄</span>
             <span>Transfer</span>
           </button>
-          <button className={`${styles.btn} ${styles.btnAction}`}>
+          <button 
+            className={`${styles.btn} ${styles.btnAction}`}
+            onClick={() => window.location.href = '/analysis'}
+          >
             <span className={styles.actionIcon}>📊</span>
-            <span>Analiză</span>
+            <span>Analysis</span>
           </button>
-          <button className={`${styles.btn} ${styles.btnAction}`}>
+          <button 
+            className={`${styles.btn} ${styles.btnAction}`}
+            onClick={() => window.location.href = '/change-password'}
+          >
             <span className={styles.actionIcon}>🔑</span>
-            <span>Schimbare parolă</span>
+            <span>Change Password</span>
           </button>
         </div>
       </div>
     </div>
   );
+  
+  // Main dashboard structure
   return (
     <div className={styles.dashboardContainer}>
       <div className={styles.container}>

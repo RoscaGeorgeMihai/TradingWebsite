@@ -24,13 +24,11 @@ const investReducer = (state, action) => {
     case 'ADD_TRANSACTION':
       return {
         ...state,
-        transactions: [action.payload, ...state.transactions],
-        totalBalance: action.payload.type === 'Deposit' 
-          ? state.totalBalance + Math.abs(action.payload.amount) 
-          : state.totalBalance - Math.abs(action.payload.amount),
-        availableFunds: action.payload.type === 'Deposit' 
-          ? state.availableFunds + Math.abs(action.payload.amount) 
-          : state.availableFunds - Math.abs(action.payload.amount)
+        transactions: [action.payload.transaction, ...state.transactions],
+        totalBalance: action.payload.profile.totalBalance,
+        availableFunds: action.payload.profile.availableFunds,
+        investedAmount: action.payload.profile.investedAmount,
+        loading: false
       };
     case 'SET_LOADING':
       return {
@@ -100,14 +98,13 @@ const InvestProvider = ({ children }) => {
         ...cardDetails
       });
       
-      dispatch({
-        type: 'LOAD_PROFILE',
-        payload: res.data.profile
-      });
-      
+      // În loc să declanșăm două acțiuni separate, trimitem tot într-o singură acțiune
       dispatch({
         type: 'ADD_TRANSACTION',
-        payload: res.data.transaction
+        payload: {
+          transaction: res.data.transaction,
+          profile: res.data.profile
+        }
       });
       
       return { success: true };
@@ -128,14 +125,13 @@ const InvestProvider = ({ children }) => {
         iban
       });
 
-      dispatch({
-        type: 'LOAD_PROFILE',
-        payload: res.data.profile
-      });
-      
+      // În loc să declanșăm două acțiuni separate, trimitem tot într-o singură acțiune
       dispatch({
         type: 'ADD_TRANSACTION',
-        payload: res.data.transaction
+        payload: {
+          transaction: res.data.transaction,
+          profile: res.data.profile
+        }
       });
       
       return { success: true };

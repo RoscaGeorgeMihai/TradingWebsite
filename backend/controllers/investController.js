@@ -3,7 +3,6 @@ const Transaction = require('../models/Transaction');
 
 exports.getInvestmentProfile = async (req, res) => {
     try {
-
         const user = await Users.findById(req.user.id).select('-password');
         
         if (!user) {
@@ -39,13 +38,11 @@ exports.getInvestmentProfile = async (req, res) => {
 exports.depositFunds = async (req, res) => {
     const { amount, cardNumber, cardHolder, expiryDate, cvv } = req.body;
     
-
     if (!amount || !cardNumber || !cardHolder || !expiryDate || !cvv) {
         return res.status(400).json({ message: 'Toate câmpurile sunt obligatorii' });
     }
     
     try {
-
         const depositAmount = parseFloat(amount);
         
         if (isNaN(depositAmount) || depositAmount <= 0) {
