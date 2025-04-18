@@ -11,28 +11,32 @@ const authReducer = (state, action) => {
         ...state,
         isAuthenticated: true,
         user: action.payload,
-        loading: false
+        loading: false,
+        isAdmin: action.payload.role === 'admin' // Adaugă verificarea pentru admin
       };
     case 'LOGOUT':
       return {
         ...state,
         isAuthenticated: false,
         user: null,
-        loading: false
+        loading: false,
+        isAdmin: false // Resetează starea de admin
       };
     case 'USER_LOADED':
       return {
         ...state,
         isAuthenticated: true,
         user: action.payload,
-        loading: false
+        loading: false,
+        isAdmin: action.payload.role === 'admin' // Verifică rolul la încărcarea utilizatorului
       };
     case 'AUTH_ERROR':
       return {
         ...state,
         isAuthenticated: false,
         user: null,
-        loading: false
+        loading: false,
+        isAdmin: false // Resetează starea de admin în caz de eroare
       };
     default:
       return state;
@@ -43,7 +47,8 @@ const AuthProvider = ({ children }) => {
   const initialState = {
     isAuthenticated: false,
     user: null,
-    loading: true
+    loading: true,
+    isAdmin: false // Adaugă starea inițială pentru admin
   };
 
   const [state, dispatch] = useReducer(authReducer, initialState);
@@ -54,15 +59,14 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      // Call the API but don't store the response in a variable since we're not using it
       await api.post('/auth/login', { email, password });
       
       dispatch({
         type: 'LOGIN',
-        payload: { id: 'authenticated' } // Temporary payload until we load user data
+        payload: { id: 'authenticated' } // Se va înlocui cu datele utilizatorului după loadUser
       });
       
-      loadUser(); // Load the actual user data
+      loadUser(); // Încarcă datele utilizatorului, inclusiv rolul
       return true;
     } catch (err) {
       dispatch({ type: 'AUTH_ERROR' });
@@ -72,7 +76,6 @@ const AuthProvider = ({ children }) => {
 
   const register = async (firstName, lastName, email, password) => {
     try {
-      // Call the API but don't store the response in a variable
       await api.post('/auth/register', { 
         firstName, 
         lastName, 
@@ -82,7 +85,7 @@ const AuthProvider = ({ children }) => {
       
       dispatch({
         type: 'LOGIN',
-        payload: { id: 'authenticated' } // Temporary payload until we load user data
+        payload: { id: 'authenticated' }
       });
       
       loadUser();
@@ -114,6 +117,7 @@ const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         isAuthenticated: state.isAuthenticated,
+        isAdmin: state.isAdmin, // Expune starea de admin
         user: state.user,
         loading: state.loading,
         login,

@@ -1,0 +1,75 @@
+[{
+  "_id": {
+    "$oid": "67f80134ff8d5aff30430d4a"
+  },
+  "userId": {
+    "$oid": "67f6aa9071c1264fa368fada"
+  },
+  "type": "Deposit",
+  "amount": 500,
+  "status": "Completed",
+  "date": {
+    "$date": "2025-04-10T17:34:44.591Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67f98483063bbdc85cc0147d"
+  },
+  "userId": {
+    "$oid": "67f6aa9071c1264fa368fada"
+  },
+  "type": "Deposit",
+  "amount": 200,
+  "status": "Completed",
+  "date": {
+    "$date": "2025-04-11T21:07:15.888Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67f98499063bbdc85cc01485"
+  },
+  "userId": {
+    "$oid": "67f6aa9071c1264fa368fada"
+  },
+  "type": "Withdrawal",
+  "amount": 200,
+  "status": "Completed",
+  "date": {
+    "$date": "2025-04-11T21:07:37.373Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67f9866e063bbdc85cc01491"
+  },
+  "userId": {
+    "$oid": "67f6aa9071c1264fa368fada"
+  },
+  "type": "Withdrawal",
+  "amount": 100,
+  "status": "Completed",
+  "date": {
+    "$date": "2025-04-11T21:15:26.629Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67f9867d063bbdc85cc01495"
+  },
+  "userId": {
+    "$oid": "67f6aa9071c1264fa368fada"
+  },
+  "type": "Deposit",
+  "amount": 100,
+  "status": "Completed",
+  "date": {
+    "$date": "2025-04-11T21:15:41.763Z"
+  },
+  "__v": 0
+}]

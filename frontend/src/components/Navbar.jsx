@@ -8,7 +8,7 @@ function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
   
-  const { isAuthenticated, logout } = useContext(AuthContext);
+  const { isAuthenticated, isAdmin, logout } = useContext(AuthContext);
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -96,6 +96,19 @@ function Navbar() {
               News
             </a>
           </li>
+          
+          {/* Admin link */}
+          {isAuthenticated && isAdmin && (
+            <li>
+              <a
+                href="/admin"
+                onClick={(e) => handleNavigation("/admin", e)}
+                className={styles.adminLink}
+              >
+                Admin
+              </a>
+            </li>
+          )}
         </ul>
 
         <div className={styles.authButtons}>

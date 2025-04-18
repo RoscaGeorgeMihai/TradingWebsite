@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from '../styles/Stocks.module.css';
-import tiingoApi from '../services/tiingoApi'; // Import the tiingoApi
+import marketstackApi from '../services/marketstackApi'; // Import the marketstackApi instead of tiingoApi
 
 const Stocks = () => {
   const [activeCategory, setActiveCategory] = useState('all');
@@ -208,7 +208,7 @@ const Stocks = () => {
     }
   ];
 
-  // Fetch stock data using tiingoApi
+  // Fetch stock data using marketstackApi
   useEffect(() => {
     const fetchStockData = async () => {
       setLoading(true);
@@ -217,7 +217,7 @@ const Stocks = () => {
         const symbols = initialStocksData.map(stock => stock.symbol);
         
         // Fetch quotes for all symbols at once
-        const quotesMap = await tiingoApi.getMultipleStockQuotes(symbols);
+        const quotesMap = await marketstackApi.getMultipleStockQuotes(symbols);
         
         // Merge the quotes with the initial data
         const updatedStocksData = initialStocksData.map(stock => {
@@ -237,7 +237,12 @@ const Stocks = () => {
             change: changePercent,
             isPositive,
             // Update rankings based on actual price changes
-            ranking: determineRanking(stock.ranking, quote.changePercent)
+            ranking: determineRanking(stock.ranking, quote.changePercent),
+            // Use additional data from API if available
+            high: quote.high,
+            low: quote.low,
+            open: quote.open,
+            volume: quote.volume ? `$${(quote.volume / 1000000).toFixed(1)}M` : stock.volume
           };
         });
         
@@ -247,7 +252,68 @@ const Stocks = () => {
         setStocksData(sortedData);
       } catch (error) {
         console.error('Error fetching stock data:', error);
-        // Fallback to static data if API fetch fails
+        // Check if we have cached data
+        const cacheStats = marketstackApi.getCacheStats();
+        console.log('Cache stats:', cacheStats);
+        
+        // Attempt to get data from cache if available
+        if (cacheStats.size > 0) {
+          try {
+            const updatedFromCache = [];
+            
+            for (const stock of initialStocksData) {
+              const cacheKey = `quote-${stock.symbol}`;
+              if (cacheStats.keys.includes(cacheKey)) {
+                // We have this stock in cache, try to use it
+                const cachedStock = await marketstackApi.getStockQuote(stock.symbol);
+                
+                if (cachedStock) {
+                  const isPositive = cachedStock.change > 0;
+                  const changePercent = cachedStock.changePercent 
+                    ? `${isPositive ? '+' : ''}${cachedStock.changePercent.toFixed(2)}%` 
+                    : '0.00%';
+                  
+                  updatedFromCache.push({
+                    ...stock,
+                    price: cachedStock.price ? cachedStock.price.toFixed(2) : '0.00',
+                    change: changePercent,
+                    isPositive,
+                    ranking: determineRanking(stock.ranking, cachedStock.changePercent),
+                    high: cachedStock.high,
+                    low: cachedStock.low,
+                    open: cachedStock.open,
+                    volume: cachedStock.volume ? `$${(cachedStock.volume / 1000000).toFixed(1)}M` : stock.volume
+                  });
+                } else {
+                  updatedFromCache.push({
+                    ...stock,
+                    price: '0.00',
+                    change: '0.00%',
+                    isPositive: false
+                  });
+                }
+              } else {
+                // No cache for this stock
+                updatedFromCache.push({
+                  ...stock,
+                  price: '0.00',
+                  change: '0.00%',
+                  isPositive: false
+                });
+              }
+            }
+            
+            if (updatedFromCache.length > 0) {
+              const sortedFromCache = sortStocksByPerformance(updatedFromCache);
+              setStocksData(sortedFromCache);
+              return;
+            }
+          } catch (cacheError) {
+            console.error('Error retrieving from cache:', cacheError);
+          }
+        }
+        
+        // Fallback to static data if API fetch and cache retrieval fail
         setStocksData(initialStocksData.map(stock => ({
           ...stock,
           price: '0.00',
@@ -324,11 +390,62 @@ const Stocks = () => {
   const featuredStock = popularStocks.length > 0 ? popularStocks[0] : 
                        filteredStocks.length > 0 ? filteredStocks[0] : null;
 
+  // Manually refresh data
+  const handleRefreshData = async () => {
+    setLoading(true);
+    try {
+      // Clear cache to get fresh data
+      marketstackApi.clearCache();
+      
+      // Extract all stock symbols from the initial data
+      const symbols = initialStocksData.map(stock => stock.symbol);
+      
+      // Fetch quotes for all symbols at once
+      const quotesMap = await marketstackApi.getMultipleStockQuotes(symbols);
+      
+      // Update the stocks with fresh data
+      const updatedStocksData = initialStocksData.map(stock => {
+        const quote = quotesMap[stock.symbol] || {};
+        
+        const isPositive = quote.change > 0;
+        const changePercent = quote.changePercent 
+          ? `${isPositive ? '+' : ''}${quote.changePercent.toFixed(2)}%` 
+          : '0.00%';
+        
+        return {
+          ...stock,
+          price: quote.price ? quote.price.toFixed(2) : '0.00',
+          change: changePercent,
+          isPositive,
+          ranking: determineRanking(stock.ranking, quote.changePercent),
+          high: quote.high,
+          low: quote.low,
+          open: quote.open,
+          volume: quote.volume ? `$${(quote.volume / 1000000).toFixed(1)}M` : stock.volume
+        };
+      });
+      
+      const sortedData = sortStocksByPerformance(updatedStocksData);
+      setStocksData(sortedData);
+    } catch (error) {
+      console.error('Error refreshing stock data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Stock Market</h1>
         <p className={styles.pageSubtitle}>Track real-time prices and trends across global stock markets</p>
+        <button 
+          onClick={handleRefreshData} 
+          className={styles.refreshButton}
+          disabled={loading}
+        >
+          {loading ? 'Refreshing...' : 'Refresh Data'}
+        </button>
       </div>
       
       {/* Search and filters section */}
@@ -405,6 +522,11 @@ const Stocks = () => {
                   featuredStock.category === 'energy' ? 'energy' : 'global'} company 
                 with a market capitalization of {featuredStock.marketCap}.
               </p>
+              {featuredStock.high && featuredStock.low && (
+                <p>
+                  Today's trading range: ${featuredStock.low.toFixed(2)} - ${featuredStock.high.toFixed(2)}
+                </p>
+              )}
             </div>
             <div className={styles.tradingButtons}>
               <Link to={`/stocks/${featuredStock.symbol}`} className={styles.buyButton}>

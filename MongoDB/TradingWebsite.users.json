@@ -1,0 +1,30 @@
+[{
+  "_id": {
+    "$oid": "67f6aa9071c1264fa368fada"
+  },
+  "firstName": "George",
+  "lastName": "Rosca",
+  "email": "mihaigeorge985@yahoo.com",
+  "password": "$2b$10$WBfQ8E/GYCM1t8tFeRiX6ulwSDqkPpYn7W8ftBqykC5UAonTcTJiq",
+  "role": "admin",
+  "status": "active",
+  "__v": 0,
+  "availableFunds": 500,
+  "investedAmount": 0,
+  "totalBalance": 500
+},
+{
+  "_id": {
+    "$oid": "67f98ced8e1324ccd5f3aea9"
+  },
+  "firstName": "George",
+  "lastName": "Mihai",
+  "email": "georgerosca@yahoo.com",
+  "password": "$2b$10$DAvOAgRvDOqt5Ujz1lO5B.v7BSX5vbojCi1HBAX/5ZfCC4UWje2na",
+  "role": "user",
+  "status": "active",
+  "totalBalance": 0,
+  "availableFunds": 0,
+  "investedAmount": 0,
+  "__v": 0
+}]
