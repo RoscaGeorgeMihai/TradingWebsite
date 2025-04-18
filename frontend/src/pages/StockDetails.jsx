@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import PropTypes from 'prop-types'
 import styles from '../styles/StockDetails.module.css'
-import tiingoApi from '../services/tiingoApi'
+import marketstackApi from '../services/marketstackApi'
 import StockChart from '../components/StockChart'
 import ApiErrorBoundary from '../components/ApiErrorBoundary'
 import { useParams } from 'react-router-dom'
@@ -19,8 +19,10 @@ const StockDetail = ({ stockSymbolProp }) => {
   const [error, setError] = useState(null)
   const [lastFetchTime, setLastFetchTime] = useState({ marketData: null })
   const [refreshStatus, setRefreshStatus] = useState('')
+  const [cacheStats, setCacheStats] = useState(null)
   const stockDataRef = useRef(null)
   const isInitialMount = useRef(true)
+  const [isCrypto, setIsCrypto] = useState(false)
 
   const [performanceData, setPerformanceData] = useState({
     day: { change: 0, percentChange: 0 },
@@ -33,7 +35,12 @@ const StockDetail = ({ stockSymbolProp }) => {
     ytd: { change: 0, percentChange: 0 },
   })
 
-  const getTiingoInterval = (timeFilter) => {
+  // Determine if symbol is crypto by checking if it includes "USD"
+  useEffect(() => {
+    setIsCrypto(stockSymbol.toUpperCase().includes('USD'))
+  }, [stockSymbol])
+
+  const getInterval = (timeFilter) => {
     switch (timeFilter) {
       case '1d': return '15min'
       case '1w': return '1hour'
@@ -125,12 +132,24 @@ const StockDetail = ({ stockSymbolProp }) => {
       const oldestDate = new Date(today)
       oldestDate.setFullYear(today.getFullYear() - 5)
 
-      const historicalData = await tiingoApi.getHistoricalData(
-        stockSymbol,
-        oldestDate,
-        today,
-        'daily',
-      )
+      let historicalData
+      if (isCrypto) {
+        historicalData = await marketstackApi.getCryptoData(
+          stockSymbol,
+          oldestDate,
+          today,
+          'daily'
+        )
+      } else {
+        // Use the marketstackApi's historical data functionality
+        const fromDate = oldestDate.toISOString().split('T')[0]
+        const toDate = today.toISOString().split('T')[0]
+        historicalData = await marketstackApi.generateSimulatedHistoricalData(
+          stockSymbol, 
+          fromDate, 
+          toDate
+        )
+      }
 
       let currentPrice = currentPriceOverride
       if (currentPrice === null && stockDataRef.current) {
@@ -153,7 +172,7 @@ const StockDetail = ({ stockSymbolProp }) => {
     } catch (error) {
       console.error('Error calculating performance data:', error)
     }
-  }, [stockSymbol, calculateExactPerformances])
+  }, [stockSymbol, calculateExactPerformances, isCrypto])
 
   const fetchAllData = useCallback(
     async (isRefresh = false) => {
@@ -180,21 +199,27 @@ const StockDetail = ({ stockSymbolProp }) => {
           default: fromDate.setMonth(today.getMonth() - 3)
         }
 
-        const interval = getTiingoInterval(activeTimeFilter)
+        const interval = getInterval(activeTimeFilter)
         const isIntraday = isIntradayFilter(activeTimeFilter)
 
         let historical
         if (isIntraday) {
-          historical = await tiingoApi.getIntradayData(stockSymbol, interval)
-          if (activeTimeFilter === '1w' && historical.length < 40) {
-            historical = await tiingoApi.getIntradayData(stockSymbol, '1hour')
-          }
-        } else {
-          historical = await tiingoApi.getHistoricalData(
+          historical = await marketstackApi.getIntradayData(stockSymbol, interval)
+        } else if (isCrypto) {
+          historical = await marketstackApi.getCryptoData(
             stockSymbol,
             fromDate,
             today,
-            interval,
+            'daily'
+          )
+        } else {
+          // For normal stocks, use the simulated historical data
+          const fromDateStr = fromDate.toISOString().split('T')[0]
+          const toDateStr = today.toISOString().split('T')[0]
+          historical = await marketstackApi.generateSimulatedHistoricalData(
+            stockSymbol, 
+            fromDateStr, 
+            toDateStr
           )
         }
 
@@ -207,14 +232,15 @@ const StockDetail = ({ stockSymbolProp }) => {
           volume: item.volume,
         }))
 
-        const [quote, companyProfile] = await Promise.all([
-          tiingoApi.getStockQuote(stockSymbol),
-          tiingoApi.getCompanyProfile(stockSymbol),
-        ])
+        // Get current stock quote
+        const quote = await marketstackApi.getStockQuote(stockSymbol)
+        
+        // Get cache stats to show API efficiency
+        const cacheStatsData = marketstackApi.getCacheStats()
+        setCacheStats(cacheStatsData)
 
-        const lastPrice = quote.tngoLast || quote.last || quote.price || 
-                         (chartData.length > 0 ? chartData[chartData.length - 1].price : 0)
-
+        const lastPrice = quote.price
+        
         if (chartData.length > 0) {
           chartData[chartData.length - 1].price = lastPrice
         }
@@ -239,12 +265,23 @@ const StockDetail = ({ stockSymbolProp }) => {
 
         let yearlyData = historical
         if (activeTimeFilter !== '1y' && activeTimeFilter !== '5y') {
-          yearlyData = await tiingoApi.getHistoricalData(
-            stockSymbol,
-            oneYearAgo,
-            today,
-            'daily',
-          )
+          if (isCrypto) {
+            yearlyData = await marketstackApi.getCryptoData(
+              stockSymbol,
+              oneYearAgo,
+              today,
+              'daily'
+            )
+          } else {
+            // Get simulated yearly data
+            const oneYearAgoStr = oneYearAgo.toISOString().split('T')[0]
+            const todayStr = today.toISOString().split('T')[0]
+            yearlyData = await marketstackApi.generateSimulatedHistoricalData(
+              stockSymbol, 
+              oneYearAgoStr, 
+              todayStr
+            )
+          }
         }
 
         let high52Week = 0
@@ -264,6 +301,7 @@ const StockDetail = ({ stockSymbolProp }) => {
 
         const avgVolume = recentData.length > 0 ? totalVolume / recentData.length : 0
 
+        // Create marketData object with all available information
         setMarketData({
           open: quote.open || (chartData.length > 0 ? chartData[0].open : 0),
           high: quote.high || (chartData.length > 0 ? Math.max(...chartData.map((d) => d.high)) : 0),
@@ -272,13 +310,34 @@ const StockDetail = ({ stockSymbolProp }) => {
           high52Week: high52Week,
           low52Week: low52Week,
           avgVolume: avgVolume,
-          prevClose: quote.prevClose || referencePrice,
+          prevClose: quote.price - quote.change,
           currentPrice: lastPrice,
+          change: quote.change,
+          changePercent: quote.changePercent,
+          timestamp: quote.timestamp,
+          isSimulated: quote.isSimulated,
         })
+
+        // Create company info - Since the marketstackApi doesn't have company profiles,
+        // we'll create a basic one based on the symbol
+        const companyProfile = {
+          name: isCrypto ? 
+            `${stockSymbol.replace('USD', '')} / USD` : 
+            `${stockSymbol} Inc.`,
+          exchange_acronym: isCrypto ? 'CRYPTO' : 'EXCH',
+          stock_exchange: isCrypto ? 'Cryptocurrency Market' : 'Stock Exchange',
+          exchange_country: 'US',
+          description: isCrypto ? 
+            `${stockSymbol.replace('USD', '')} cryptocurrency trading against USD` : 
+            `${stockSymbol} is a publicly traded company.`,
+          sector: isCrypto ? 'Cryptocurrency' : 'Technology',
+          industry: isCrypto ? 'Digital Currency' : 'Various',
+          website: `https://example.com/${stockSymbol.toLowerCase()}`
+        }
 
         setStockData({
           symbol: stockSymbol,
-          name: companyProfile.name || stockSymbol,
+          name: companyProfile.name,
           currentPrice: lastPrice,
           priceChange: priceChange,
           changePercent: changePercent,
@@ -287,13 +346,15 @@ const StockDetail = ({ stockSymbolProp }) => {
           historicalData: chartData,
           company: {
             Name: companyProfile.name,
-            Exchange: companyProfile.exchange_acronym || companyProfile.stock_exchange || 'N/A',
-            Country: companyProfile.exchange_country || 'US',
-            Description: companyProfile.description || 'No description available',
-            Sector: companyProfile.sector || 'N/A',
-            Industry: companyProfile.industry || 'N/A',
-            Website: companyProfile.website || 'N/A',
+            Exchange: companyProfile.exchange_acronym,
+            Country: companyProfile.exchange_country,
+            Description: companyProfile.description,
+            Sector: companyProfile.sector,
+            Industry: companyProfile.industry,
+            Website: companyProfile.website,
           },
+          isSimulated: quote.isSimulated,
+          isCrypto: isCrypto,
         })
 
         setHistoricalData(chartData)
@@ -301,18 +362,14 @@ const StockDetail = ({ stockSymbolProp }) => {
         await calculateAllPerformances(lastPrice)
       } catch (err) {
         console.error('Error fetching stock data:', err)
-        if (err.response?.data?.error?.code === 'validation_error') {
-          setError('Invalid time interval selected. Please try a different time range.')
-        } else {
-          setError('Could not load stock data. Please try again later.')
-        }
+        setError('Could not load stock data. Please try again later.')
       } finally {
         setIsLoading(false)
         setIsRefreshing(false)
         setRefreshStatus('')
       }
     },
-    [stockSymbol, activeTimeFilter, calculateAllPerformances]
+    [stockSymbol, activeTimeFilter, calculateAllPerformances, isCrypto]
   )
 
   useEffect(() => {
@@ -341,15 +398,28 @@ const StockDetail = ({ stockSymbolProp }) => {
           const fiveYearsAgo = new Date()
           fiveYearsAgo.setFullYear(today.getFullYear() - 5)
 
-          const quote = await tiingoApi.getStockQuote(stockSymbol)
-          const historical = await tiingoApi.getHistoricalData(
-            stockSymbol,
-            fiveYearsAgo,
-            today,
-            'daily',
-          )
+          let historical
+          const quote = await marketstackApi.getStockQuote(stockSymbol)
+          
+          if (isCrypto) {
+            historical = await marketstackApi.getCryptoData(
+              stockSymbol,
+              fiveYearsAgo,
+              today,
+              'daily'
+            )
+          } else {
+            // Use simulated data for normal stocks
+            const fiveYearsAgoStr = fiveYearsAgo.toISOString().split('T')[0]
+            const todayStr = today.toISOString().split('T')[0]
+            historical = await marketstackApi.generateSimulatedHistoricalData(
+              stockSymbol, 
+              fiveYearsAgoStr, 
+              todayStr
+            )
+          }
 
-          const currentPrice = quote.tngoLast || quote.last || quote.price
+          const currentPrice = quote.price
           const sortedData = [...historical].sort(
             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
           )
@@ -408,6 +478,10 @@ const StockDetail = ({ stockSymbolProp }) => {
       }
 
       fetchFullMarketData()
+    } else if (tabId === 'cache-info') {
+      // Fetch the latest cache stats
+      const stats = marketstackApi.getCacheStats()
+      setCacheStats(stats)
     }
   }
 
@@ -422,6 +496,13 @@ const StockDetail = ({ stockSymbolProp }) => {
     }
   }, [activeTimeFilter, fetchAllData])
 
+  const handleClearCache = () => {
+    marketstackApi.clearCache()
+    setCacheStats(marketstackApi.getCacheStats())
+    setRefreshStatus('Cache cleared successfully')
+    setTimeout(() => setRefreshStatus(''), 3000)
+  }
+
   const generateColorFromSymbol = (symbol) => {
     const colorMap = {
       AAPL: '#1976d2',
@@ -431,8 +512,21 @@ const StockDetail = ({ stockSymbolProp }) => {
       META: '#1877f2',
       TSLA: '#e82127',
       NVDA: '#76b900',
+      BTCUSD: '#f7931a',
+      ETHUSD: '#627eea',
     }
-    return colorMap[symbol] || `#${Math.floor(Math.random() * 16777215).toString(16)}`
+    
+    if (colorMap[symbol]) {
+      return colorMap[symbol]
+    }
+    
+    // If it's a crypto symbol not in the map
+    if (symbol.toUpperCase().includes('USD')) {
+      return '#ff9900' // Default color for crypto
+    }
+    
+    // Otherwise generate a random color
+    return `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`
   }
 
   const tabs = [
@@ -440,6 +534,7 @@ const StockDetail = ({ stockSymbolProp }) => {
     { id: 'chart', name: 'Chart' },
     { id: 'fundamentals', name: 'Fundamentals' },
     { id: 'market-data', name: 'Market Data' },
+    { id: 'cache-info', name: 'API Cache' }, // New tab to show cache information
   ]
 
   const timeFilters = [
@@ -453,6 +548,7 @@ const StockDetail = ({ stockSymbolProp }) => {
   ]
 
   const formatNumber = (num) => {
+    if (typeof num !== 'number' || isNaN(num)) return 'N/A'
     if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`
     if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`
     if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`
@@ -460,6 +556,7 @@ const StockDetail = ({ stockSymbolProp }) => {
   }
 
   const formatVolume = (volume) => {
+    if (typeof volume !== 'number' || isNaN(volume)) return 'N/A'
     if (volume >= 1000000000) return `${(volume / 1000000000).toFixed(2)}B`
     if (volume >= 1000000) return `${(volume / 1000000).toFixed(2)}M`
     if (volume >= 1000) return `${(volume / 1000).toFixed(2)}K`
@@ -506,6 +603,12 @@ const StockDetail = ({ stockSymbolProp }) => {
             <div className={styles.stockName}>
               <h1>{stockData.symbol}</h1>
               <p>{stockData.name}</p>
+              {stockData.isSimulated && (
+                <span className={styles.simulatedBadge}>Simulated Data</span>
+              )}
+              {stockData.isCrypto && (
+                <span className={styles.cryptoBadge}>Crypto</span>
+              )}
             </div>
           </div>
           <div className={styles.stockPrice}>
@@ -514,6 +617,9 @@ const StockDetail = ({ stockSymbolProp }) => {
               {stockData.isPositive ? '+' : ''}
               {stockData.priceChange.toFixed(2)} (
               {Math.abs(stockData.changePercent).toFixed(2)}%)
+            </p>
+            <p className={styles.lastUpdated}>
+              Last updated: {marketData && marketData.timestamp ? new Date(marketData.timestamp).toLocaleString() : 'N/A'}
             </p>
             <div className={styles.tradingButtonsHeader}>
               <button className={styles.buyButtonHeader}>Buy</button>
@@ -644,6 +750,14 @@ const StockDetail = ({ stockSymbolProp }) => {
                           <span className={styles.label}>Avg Volume</span>
                           <span className={styles.value}>{formatVolume(marketData.avgVolume)}</span>
                         </div>
+                        {stockData.isSimulated && (
+                          <div className={`${styles.summaryItem} ${styles.fullWidth}`}>
+                            <span className={styles.label}>Data Source</span>
+                            <span className={styles.value}>
+                              <i>Using simulated data</i>
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -729,12 +843,31 @@ const StockDetail = ({ stockSymbolProp }) => {
                             </td>
                           </tr>
                         )}
+                        {stockData.isSimulated && (
+                          <tr>
+                            <td>Data Source:</td>
+                            <td><i>Simulated data</i></td>
+                          </tr>
+                        )}
+                        {stockData.isCrypto && (
+                          <tr>
+                            <td>Asset Type:</td>
+                            <td>Cryptocurrency</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
                   <div className={styles.companyDescription}>
                     <h3>About {stockData.name}</h3>
                     <p>{stockData.company.Description}</p>
+                    
+                    {stockData.isSimulated && (
+                      <div className={styles.simulationNotice}>
+                        <p><strong>Note:</strong> The data shown for this symbol is simulated. 
+                        Real market data would be available with a valid API subscription.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -783,6 +916,16 @@ const StockDetail = ({ stockSymbolProp }) => {
                             {Math.abs(stockData.changePercent).toFixed(2)}%)
                           </td>
                         </tr>
+                        <tr>
+                          <td>Last Updated</td>
+                          <td>{marketData.timestamp ? new Date(marketData.timestamp).toLocaleString() : 'N/A'}</td>
+                        </tr>
+                        {stockData.isSimulated && (
+                          <tr>
+                            <td>Data Source</td>
+                            <td><i>Simulated data</i></td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -961,10 +1104,86 @@ const StockDetail = ({ stockSymbolProp }) => {
               </div>
             </div>
           )}
+          
+          {/* New tab for API Cache Information */}
+          {activeTab === 'cache-info' && (
+            <div className={styles.cacheInfoSection}>
+              <div className={styles.card}>
+                <h2>API Cache Information</h2>
+                <p>MarketStack API utilizes caching to reduce API calls and improve performance.</p>
+                
+                {cacheStats && (
+                  <div className={styles.cacheStats}>
+                    <div className={styles.infoTable}>
+                      <table className={styles.fullWidthTable}>
+                        <tbody>
+                          <tr>
+                            <td>Total Items in Cache</td>
+                            <td>{cacheStats.size}</td>
+                          </tr>
+                          <tr>
+                            <td>Stock Quote Cache Duration</td>
+                            <td>{cacheStats.durations.quote / (60 * 1000)} minutes</td>
+                          </tr>
+                          <tr>
+                            <td>Historical Data Cache Duration</td>
+                            <td>{cacheStats.durations.historical / (24 * 60 * 60 * 1000)} days</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <div className={styles.cacheList}>
+                      <h3>Cached Items</h3>
+                      <div className={styles.cacheEntries}>
+                        {cacheStats.keys.map((key, index) => (
+                          <div key={index} className={styles.cacheEntry}>
+                            {key}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className={styles.cacheActions}>
+                      <button className={styles.btnClear} onClick={handleClearCache}>
+                        Clear Cache
+                      </button>
+                      <button className={styles.btnRefresh} onClick={() => fetchAllData(true)}>
+                        Refresh Data
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                <div className={styles.simulationInfo}>
+                  <h3>About The Data</h3>
+                  <p>
+                    The MarketStack API provides real-time and historical stock market data. When the
+                    API cannot provide data (due to limitations, access permissions, or connectivity issues),
+                    the system automatically generates simulated data based on the stock symbol.
+                  </p>
+                  
+                  <div className={styles.dataSourceInfo}>
+                    <p>
+                      <strong>Current Data Source:</strong>{' '}
+                      {stockData.isSimulated ? 'Simulated data (fallback)' : 'API data'}
+                    </p>
+                    <p>
+                      <strong>Data Type:</strong>{' '}
+                      {stockData.isCrypto ? 'Cryptocurrency' : 'Stock Market'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className={styles.tradingActions}>
           <button className={styles.setAlertButton}>Set Price Alert</button>
+          <button className={styles.refreshButton} onClick={() => fetchAllData(true)}>
+            Refresh Data
+          </button>
         </div>
 
         <div className={styles.newsSection}>

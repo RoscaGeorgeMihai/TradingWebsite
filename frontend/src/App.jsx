@@ -13,9 +13,11 @@ import StockDetails from './pages/StockDetails'
 import CryptoDetails from './pages/CryptoDetails'
 import CommoditiesDetails from './pages/CommoditiesDetails'
 import Portfolio from './pages/Portfolio'
+import AdminPage from './pages/AdminPage' // Importă pagina de admin
 import { AuthProvider } from './components/AuthContext'
 import { InvestProvider } from './components/InvestContext'
 import PrivateRoute from './components/PrivateRoute'
+import AdminRoute from './components/AdminRoute' // Importă AdminRoute
 
 function App() {
   return (
@@ -53,6 +55,16 @@ function App() {
               <Route
                 path="/commodities/:symbol"
                 element={<CommoditiesDetails />}
+              />
+              
+              {/* Rute pentru Admin */}
+              <Route 
+                path="/admin/*" 
+                element={
+                  <AdminRoute>
+                    <AdminPage />
+                  </AdminRoute>
+                } 
               />
             </Routes>
           </div>

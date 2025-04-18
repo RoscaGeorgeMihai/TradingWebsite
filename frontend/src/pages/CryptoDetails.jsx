@@ -1,124 +1,357 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import styles from '../styles/CryptoDetails.module.css';
+import CryptoChart from '../components/CryptoChart';
+import ApiErrorBoundary from '../components/ApiErrorBoundary';
+import { useParams } from 'react-router-dom';
+import marketstackApi from '../services/marketstackApi';
 
-const CryptoDetail = ({ cryptoSymbol = "BTC" }) => {
-  // State for cryptocurrency data and active tab
+const CryptoDetail = ({ cryptoSymbolProp }) => {
+  const { symbol: symbolFromUrl } = useParams();
+  const cryptoSymbol = cryptoSymbolProp || symbolFromUrl || 'BTC';
+  const apiSymbol = `${cryptoSymbol}USD`; // Simbol pentru API
+  
   const [activeTab, setActiveTab] = useState('overview');
   const [activeTimeFilter, setActiveTimeFilter] = useState('3m');
   const [cryptoData, setCryptoData] = useState(null);
+  const [historicalData, setHistoricalData] = useState([]);
+  const [marketData, setMarketData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [lastFetchTime, setLastFetchTime] = useState({ marketData: null });
+  const [refreshStatus, setRefreshStatus] = useState('');
+  const cryptoDataRef = useRef(null);
+  const isInitialMount = useRef(true);
 
-  // Simulating cryptocurrency data loading
-  useEffect(() => {
-    // Here would be a real API call to fetch cryptocurrency data
-    setTimeout(() => {
-      const cryptosData = {
-        "BTC": {
-          symbol: 'BTC',
-          name: 'Bitcoin',
-          currentPrice: 63872.45,
-          priceChange: 1245.32,
-          isPositive: true,
-          color: '#F7931A',
-          historicalData: generateMockHistoricalData(),
-          news: [
-            {
-              id: 1,
-              title: 'Bitcoin reaches new all-time high',
-              source: 'CryptoNews',
-              date: 'April 6, 2025',
-              snippet: 'Bitcoin surpassed $65,000, setting a new historic record amid growing institutional interest.',
-              url: '#'
-            },
-            {
-              id: 2,
-              title: 'Protocol update proposed for Bitcoin',
-              source: 'BlockchainReport',
-              date: 'April 4, 2025',
-              snippet: 'Bitcoin developer community debates a new improvement proposal that could increase transaction efficiency.',
-              url: '#'
-            },
-            {
-              id: 3,
-              title: 'Bitcoin adoption grows in Latin America',
-              source: 'CryptoDaily',
-              date: 'March 30, 2025',
-              snippet: 'Latin American countries continue to adopt Bitcoin as a payment method, with new favorable regulations in several countries in the region.',
-              url: '#'
-            },
-            {
-              id: 4,
-              title: 'Bitcoin miners turning to green energy',
-              source: 'EcoBlockchain',
-              date: 'March 27, 2025',
-              snippet: 'A growing number of Bitcoin mining companies announce switching to renewable energy sources for their operations.',
-              url: '#'
-            }
-          ],
-          financials: {
-            marketCap: 1.24, // in trillions
-            volume24h: 45.6, // in billions
-            circulatingSupply: 19.67, // in millions
-            maxSupply: 21, // in millions
-            historical: [
-              { year: 2022, q1: 38427, q2: 29789, q3: 19426, q4: 16547 },
-              { year: 2023, q1: 28354, q2: 30129, q3: 27183, q4: 42853 },
-              { year: 2024, q1: 52347, q2: 57914, q3: 58723, q4: 61284 },
-              { year: 2025, q1: 63872, estimated: true }
-            ]
-          },
-          network: {
-            hashRate: '458 EH/s',
-            difficulty: '72.35 T',
-            blockTime: '9.64 min',
-            blockReward: 3.125,
-            lastHalving: 'April 2024',
-            nextHalving: 'March 2028 (est.)'
-          }
-        }
-        // Data for other cryptocurrencies would go here (ETH, XRP, etc.)
-      };
+  const [performanceData, setPerformanceData] = useState({
+    day: { change: 0, percentChange: 0 },
+    week: { change: 0, percentChange: 0 },
+    month: { change: 0, percentChange: 0 },
+    threeMonths: { change: 0, percentChange: 0 },
+    sixMonths: { change: 0, percentChange: 0 },
+    year: { change: 0, percentChange: 0 },
+    fiveYears: { change: 0, percentChange: 0 },
+    ytd: { change: 0, percentChange: 0 },
+  });
 
-      setCryptoData(cryptosData[cryptoSymbol]);
-      setIsLoading(false);
-    }, 800);
-  }, [cryptoSymbol]);
-
-  // Function to generate historical data for the chart
-  function generateMockHistoricalData() {
-    const data = [];
-    const today = new Date();
-    let basePrice = 60000;
-    
-    // Generate data for the last 180 days
-    for (let i = 180; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      
-      // Add random variation to price
-      const volatility = Math.random() * 0.04 - 0.02; // Cryptocurrency volatility is higher
-      basePrice = basePrice * (1 + volatility);
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        price: parseFloat(basePrice.toFixed(2))
-      });
+  // Această funcție determină intervalul pentru API în funcție de filtrul de timp
+  const getApiInterval = (timeFilter) => {
+    switch (timeFilter) {
+      case '1d': return '15min';
+      case '1w': return 'hourly';
+      case '1m': return 'daily';
+      case '3m': return 'daily';
+      case '6m': return 'daily';
+      case '1y': return 'daily';
+      case '5y': return 'daily';
+      default: return 'daily';
     }
-    
-    return data;
-  }
+  };
+
+  const isIntradayFilter = (timeFilter) => {
+    return ['1d', '1w'].includes(timeFilter);
+  };
+
+  const calculateExactPerformances = useCallback((historicalData, currentPriceOverride = null) => {
+    if (!historicalData || historicalData.length === 0) return;
+
+    const sortedData = [...historicalData].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    const lastDataPoint = sortedData[sortedData.length - 1];
+    const currentPrice = currentPriceOverride !== null ? currentPriceOverride : (lastDataPoint.close || lastDataPoint.price);
+    const currentDate = new Date(lastDataPoint.date);
+
+    const findClosestDataPoint = (targetDate) => {
+      let closestIndex = 0;
+      let closestDiff = Infinity;
+      
+      for (let i = 0; i < sortedData.length; i++) {
+        const dataDate = new Date(sortedData[i].date);
+        const diff = Math.abs(dataDate.getTime() - targetDate.getTime());
+        if (diff < closestDiff) {
+          closestDiff = diff;
+          closestIndex = i;
+        }
+      }
+      return sortedData[closestIndex];
+    };
+
+    const timeRanges = [
+      { name: 'day', days: 1 },
+      { name: 'week', days: 7 },
+      { name: 'month', days: 30 },
+      { name: 'threeMonths', days: 90 },
+      { name: 'sixMonths', days: 180 },
+      { name: 'year', days: 365 },
+      { name: 'fiveYears', days: 365 * 5 },
+    ];
+
+    const newPerformanceData = {};
+
+    timeRanges.forEach((range) => {
+      const pastDate = new Date(currentDate);
+      pastDate.setDate(currentDate.getDate() - range.days);
+      const pastDataPoint = findClosestDataPoint(pastDate);
+      const pastPrice = pastDataPoint.close || pastDataPoint.price;
+      const change = currentPrice - pastPrice;
+      const percentChange = pastPrice !== 0 ? (change / pastPrice) * 100 : 0;
+
+      newPerformanceData[range.name] = {
+        change,
+        percentChange,
+        currentDate: lastDataPoint.date,
+        currentPrice: currentPrice,
+        pastDate: pastDataPoint.date,
+        pastPrice: pastPrice
+      };
+    });
+
+    const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
+    const startOfYearDataPoint = findClosestDataPoint(startOfYear);
+    const startOfYearPrice = startOfYearDataPoint.close || startOfYearDataPoint.price;
+    const ytdChange = currentPrice - startOfYearPrice;
+    const ytdPercentChange = startOfYearPrice !== 0 ? (ytdChange / startOfYearPrice) * 100 : 0;
+
+    newPerformanceData.ytd = {
+      change: ytdChange,
+      percentChange: ytdPercentChange,
+      currentDate: lastDataPoint.date,
+      currentPrice: currentPrice,
+      pastDate: startOfYearDataPoint.date,
+      pastPrice: startOfYearPrice
+    };
+
+    setPerformanceData(newPerformanceData);
+  }, []);
+
+  const calculateAllPerformances = useCallback(async (currentPriceOverride = null) => {
+    try {
+      const today = new Date();
+      const oldestDate = new Date(today);
+      oldestDate.setFullYear(today.getFullYear() - 5);
+
+      // Obținem date istorice pentru 5 ani
+      const historicalData = await marketstackApi.getCryptoData(
+        apiSymbol.toLowerCase(),
+        oldestDate,
+        today,
+        'daily'
+      );
+
+      let currentPrice = currentPriceOverride;
+      if (currentPrice === null && cryptoDataRef.current) {
+        currentPrice = cryptoDataRef.current.currentPrice;
+      }
+
+      const sortedData = [...historicalData].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
+
+      if (sortedData.length > 0 && currentPrice !== null) {
+        sortedData[sortedData.length - 1] = {
+          ...sortedData[sortedData.length - 1],
+          close: currentPrice,
+          price: currentPrice
+        };
+      }
+
+      calculateExactPerformances(sortedData, currentPrice);
+    } catch (error) {
+      console.error('Error calculating performance data:', error);
+    }
+  }, [apiSymbol, calculateExactPerformances]);
+
+  const fetchAllData = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) {
+        setIsRefreshing(true);
+        setRefreshStatus('Refreshing market data...');
+      } else {
+        setIsLoading(true);
+      }
+      setError(null);
   
-  // Tabs for sections
+      try {
+        const today = new Date();
+        let fromDate = new Date();
+  
+        switch (activeTimeFilter) {
+          case '1d': fromDate.setDate(today.getDate() - 1); break;
+          case '1w': fromDate.setDate(today.getDate() - 7); break;
+          case '1m': fromDate.setMonth(today.getMonth() - 1); break;
+          case '3m': fromDate.setMonth(today.getMonth() - 3); break;
+          case '6m': fromDate.setMonth(today.getMonth() - 6); break;
+          case '1y': fromDate.setFullYear(today.getFullYear() - 1); break;
+          case '5y': fromDate.setFullYear(today.getFullYear() - 5); break;
+          default: fromDate.setMonth(today.getMonth() - 3);
+        }
+  
+        // Obținem intervalul pentru API
+        const interval = getApiInterval(activeTimeFilter);
+        
+        // Obținem datele istorice
+        const historical = await marketstackApi.getCryptoData(
+          apiSymbol.toLowerCase(),
+          fromDate,
+          today,
+          interval
+        );
+  
+        const chartData = historical.map((item) => ({
+          date: item.date,
+          price: item.close || item.price,
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          volume: item.volume,
+        }));
+  
+        // Obținem cotația curentă
+        const quote = await marketstackApi.getStockQuote(apiSymbol);
+  
+        // Extragem ultimul preț disponibil
+        const lastPrice = quote.price || quote.last || 
+                        (chartData.length > 0 ? chartData[chartData.length - 1].price : 0);
+  
+        if (chartData.length > 0) {
+          chartData[chartData.length - 1].price = lastPrice;
+        }
+  
+        let referencePrice;
+        if (activeTimeFilter === '1d' && chartData.length > 0) {
+          referencePrice = chartData[0].price;
+        } else if (chartData.length > 1) {
+          referencePrice = chartData[chartData.length - 2].price;
+        } else if (quote.open) {
+          referencePrice = quote.open;
+        } else {
+          referencePrice = lastPrice - quote.change;
+        }
+  
+        const priceChange = lastPrice - referencePrice;
+        const isPositive = priceChange >= 0;
+        const changePercent = referencePrice !== 0 ? (priceChange / referencePrice) * 100 : 0;
+  
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(today.getFullYear() - 1);
+  
+        // Obținem date anuale pentru calcule suplimentare
+        let yearlyData = historical;
+        if (activeTimeFilter !== '1y' && activeTimeFilter !== '5y') {
+          yearlyData = await marketstackApi.getCryptoData(
+            apiSymbol.toLowerCase(),
+            oneYearAgo,
+            today,
+            'daily'
+          );
+        }
+
+        let high52Week = 0;
+        let low52Week = Number.MAX_VALUE;
+
+        yearlyData.forEach((item) => {
+          const price = item.close || item.price;
+          if (price > high52Week) high52Week = price;
+          if (price < low52Week) low52Week = price;
+        });
+
+        let totalVolume = 0;
+        const recentData = yearlyData.slice(-30);
+        recentData.forEach((item) => {
+          totalVolume += item.volume || 0;
+        });
+
+        const avgVolume = recentData.length > 0 ? totalVolume / recentData.length : 0;
+
+        // Setăm datele de piață disponibile din MarketStack
+        setMarketData({
+          open: quote.open || (chartData.length > 0 ? chartData[0].open : 0),
+          high: quote.high || (chartData.length > 0 ? Math.max(...chartData.map((d) => d.high || 0)) : 0),
+          low: quote.low || (chartData.length > 0 ? Math.min(...chartData.map((d) => d.low || 0)) : 0),
+          volume: quote.volume || (chartData.length > 0 ? chartData[chartData.length - 1].volume : 0),
+          high52Week: high52Week,
+          low52Week: low52Week,
+          avgVolume: avgVolume,
+          prevClose: quote.prevClose || referencePrice,
+          currentPrice: lastPrice
+        });
+
+        // Setăm datele pentru criptomonedă disponibile din MarketStack
+        setCryptoData({
+          symbol: cryptoSymbol,
+          name: `${cryptoSymbol}`,
+          currentPrice: lastPrice,
+          priceChange: priceChange,
+          changePercent: changePercent,
+          isPositive: isPositive,
+          color: generateColorFromSymbol(cryptoSymbol),
+          historicalData: chartData
+        });
+
+        setHistoricalData(chartData);
+        setLastFetchTime((prev) => ({ ...prev, marketData: new Date() }));
+        await calculateAllPerformances(lastPrice);
+      } catch (err) {
+        console.error('Error fetching crypto data:', err);
+        setError(`Could not load data for ${cryptoSymbol}. Please try again later.`);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+        setRefreshStatus('');
+      }
+    },
+    [cryptoSymbol, apiSymbol, activeTimeFilter, calculateAllPerformances]
+  );
+
+  useEffect(() => {
+    cryptoDataRef.current = cryptoData;
+  }, [cryptoData]);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      fetchAllData();
+    }
+  }, [fetchAllData]);
+
+  const handleTabChange = (tabId) => {
+    if (tabId === activeTab) return;
+    setActiveTab(tabId);
+  };
+
+  const handleTimeFilterChange = (filter) => {
+    if (filter === activeTimeFilter) return;
+    setActiveTimeFilter(filter);
+  };
+
+  useEffect(() => {
+    if (!isInitialMount.current) {
+      fetchAllData();
+    }
+  }, [activeTimeFilter, fetchAllData]);
+
+  const generateColorFromSymbol = (symbol) => {
+    const colorMap = {
+      BTC: '#F7931A',
+      ETH: '#627EEA',
+      XRP: '#00AAE4',
+      LTC: '#B8B8B8',
+      ADA: '#0D1E30',
+      DOT: '#E6007A',
+      SOL: '#14F195',
+      DOGE: '#C2A633',
+    };
+    return colorMap[symbol] || `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+  };
+
   const tabs = [
     { id: 'overview', name: 'Overview' },
-    { id: 'chart', name: 'Chart' },
-    { id: 'news', name: 'News' },
-    { id: 'network', name: 'Network Data' },
-    { id: 'analysis', name: 'Analysis' }
+    { id: 'chart', name: 'Chart' }
   ];
 
-  // Time filters for chart
   const timeFilters = [
     { id: '1d', name: '1D' },
     { id: '1w', name: '1W' },
@@ -126,396 +359,312 @@ const CryptoDetail = ({ cryptoSymbol = "BTC" }) => {
     { id: '3m', name: '3M' },
     { id: '6m', name: '6M' },
     { id: '1y', name: '1Y' },
-    { id: '5y', name: '5Y' }
+    { id: '5y', name: '5Y' },
   ];
 
+  const formatNumber = (num) => {
+    if (!num) return '$0';
+    if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`;
+    if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`;
+    if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`;
+    return `$${num.toFixed(2)}`;
+  };
+
+  const formatVolume = (volume) => {
+    if (!volume) return '0';
+    if (volume >= 1000000000) return `${(volume / 1000000000).toFixed(2)}B`;
+    if (volume >= 1000000) return `${(volume / 1000000).toFixed(2)}M`;
+    if (volume >= 1000) return `${(volume / 1000).toFixed(2)}K`;
+    return volume.toString();
+  };
+
   if (isLoading) {
-    return <div className={styles.loadingContainer}>Loading data...</div>;
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingSpinner}></div>
+        <p>Loading data for {cryptoSymbol}...</p>
+      </div>
+    );
   }
 
-  // Calculate percentage change
-  const priceChangePercent = (cryptoData.priceChange / (cryptoData.currentPrice - cryptoData.priceChange) * 100).toFixed(2);
+  if (error) {
+    return (
+      <div className={styles.errorContainer}>
+        <h2>Error loading data</h2>
+        <p>{error}</p>
+        <button className={styles.btnRetry} onClick={() => window.location.reload()}>
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (!cryptoData) {
+    return (
+      <div className={styles.errorContainer}>
+        <p>No data available. Please try again.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className={styles.container}>
-      {/* Header with cryptocurrency information */}
-      <div className={styles.stockHeader}>
-        <div className={styles.stockTitle}>
-          <div className={styles.stockSymbol} style={{ backgroundColor: cryptoData.color }}>
-            {cryptoData.symbol.charAt(0)}
+    <ApiErrorBoundary>
+      <div className={styles.container}>
+        <div className={styles.stockHeader}>
+          <div className={styles.stockTitle}>
+            <div className={styles.stockSymbol} style={{ backgroundColor: cryptoData.color }}>
+              {cryptoData.symbol.charAt(0)}
+            </div>
+            <div className={styles.stockName}>
+              <h1>{cryptoData.symbol}</h1>
+              <p>{cryptoData.name}</p>
+            </div>
           </div>
-          <div className={styles.stockName}>
-            <h1>{cryptoData.symbol}</h1>
-            <p>{cryptoData.name}</p>
+          <div className={styles.stockPrice}>
+            <p className={styles.currentPrice}>${cryptoData.currentPrice.toFixed(2)}</p>
+            <p className={`${styles.priceChange} ${cryptoData.isPositive ? styles.positive : styles.negative}`}>
+              {cryptoData.isPositive ? '+' : ''}
+              {cryptoData.priceChange.toFixed(2)} (
+              {Math.abs(cryptoData.changePercent).toFixed(2)}%)
+            </p>
+            <div className={styles.tradingButtonsHeader}>
+              <button className={styles.buyButtonHeader}>Buy</button>
+              <button className={styles.sellButtonHeader}>Sell</button>
+            </div>
           </div>
         </div>
-        <div className={styles.stockPrice}>
-          <p className={styles.currentPrice}>${cryptoData.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-          <p className={`${styles.priceChange} ${cryptoData.isPositive ? styles.positive : styles.negative}`}>
-            {cryptoData.isPositive ? '+' : '-'}${Math.abs(cryptoData.priceChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({Math.abs(priceChangePercent)}%)
-          </p>
-          <button 
-            className={styles.btnInvest}
-            onClick={() => alert('Trading functionality will be implemented soon!')}
-          >
-            Invest Now
-          </button>
+
+        <div className={styles.stockTabs}>
+          {tabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              {tab.name}
+            </div>
+          ))}
         </div>
-      </div>
 
-      {/* Navigation tabs */}
-      <div className={styles.stockTabs}>
-        {tabs.map(tab => (
-          <div 
-            key={tab.id}
-            className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.name}
-          </div>
-        ))}
-      </div>
+        <div className={styles.tabContent}>
+          {activeTab === 'overview' && (
+            <div className={styles.overviewSection}>
+              <div className={styles.overviewLayout}>
+                <div className={`${styles.largeChartContainer} ${styles.card}`}>
+                  <h2>Price Chart</h2>
+                  <div className={styles.chartToolbar}>
+                    <div className={styles.timeFilters}>
+                      {timeFilters.map((filter) => (
+                        <button
+                          key={filter.id}
+                          className={`${styles.filterBtn} ${activeTimeFilter === filter.id ? styles.active : ''}`}
+                          onClick={() => handleTimeFilterChange(filter.id)}
+                        >
+                          {filter.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.chartContainer}>
+                    {historicalData.length > 0 ? (
+                      <CryptoChart
+                        data={historicalData}
+                        color={cryptoData.color}
+                        isIntraday={isIntradayFilter(activeTimeFilter)}
+                      />
+                    ) : (
+                      <div className={styles.noData}>No data available</div>
+                    )}
+                  </div>
+                </div>
 
-      {/* Content based on active tab */}
-      <div className={styles.tabContent}>
-        {activeTab === 'overview' && (
-          <div className={styles.overviewSection}>
-            {/* Layout with large chart */}
-            <div className={styles.overviewLayout}>
-              {/* Left side with price chart */}
-              <div className={`${styles.largeChartContainer} ${styles.card}`}>
-                <h2>Price Evolution</h2>
+                <div className={styles.sidebarContainer}>
+                  {marketData && (
+                    <div className={styles.card}>
+                      <h2>Market Stats</h2>
+                      <div className={styles.summaryGrid}>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Open</span>
+                          <span className={styles.value}>${marketData.open.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>High</span>
+                          <span className={styles.value}>${marketData.high.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Low</span>
+                          <span className={styles.value}>${marketData.low.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Volume</span>
+                          <span className={styles.value}>{formatVolume(marketData.volume)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Avg. Volume (30d)</span>
+                          <span className={styles.value}>{formatVolume(marketData.avgVolume)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>Prev. Close</span>
+                          <span className={styles.value}>${marketData.prevClose.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>52-Week High</span>
+                          <span className={styles.value}>${marketData.high52Week.toFixed(2)}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                          <span className={styles.label}>52-Week Low</span>
+                          <span className={styles.value}>${marketData.low52Week.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={styles.card}>
+                    <h2>Performance</h2>
+                    <div className={styles.performanceTable}>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Period</th>
+                            <th>Change</th>
+                            <th>% Change</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>1 Day</td>
+                            <td className={performanceData.day.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.day.change >= 0 ? '+' : ''}$
+                              {Math.abs(performanceData.day.change).toFixed(2)}
+                            </td>
+                            <td className={performanceData.day.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.day.change >= 0 ? '+' : ''}
+                              {Math.abs(performanceData.day.percentChange).toFixed(2)}%
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>1 Week</td>
+                            <td className={performanceData.week.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.week.change >= 0 ? '+' : ''}$
+                              {Math.abs(performanceData.week.change).toFixed(2)}
+                            </td>
+                            <td className={performanceData.week.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.week.change >= 0 ? '+' : ''}
+                              {Math.abs(performanceData.week.percentChange).toFixed(2)}%
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>1 Month</td>
+                            <td className={performanceData.month.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.month.change >= 0 ? '+' : ''}$
+                              {Math.abs(performanceData.month.change).toFixed(2)}
+                            </td>
+                            <td className={performanceData.month.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.month.change >= 0 ? '+' : ''}
+                              {Math.abs(performanceData.month.percentChange).toFixed(2)}%
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>3 Months</td>
+                            <td className={performanceData.threeMonths.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.threeMonths.change >= 0 ? '+' : ''}$
+                              {Math.abs(performanceData.threeMonths.change).toFixed(2)}
+                            </td>
+                            <td className={performanceData.threeMonths.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.threeMonths.change >= 0 ? '+' : ''}
+                              {Math.abs(performanceData.threeMonths.percentChange).toFixed(2)}%
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>6 Months</td>
+                            <td className={performanceData.sixMonths.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.sixMonths.change >= 0 ? '+' : ''}$
+                              {Math.abs(performanceData.sixMonths.change).toFixed(2)}
+                            </td>
+                            <td className={performanceData.sixMonths.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.sixMonths.change >= 0 ? '+' : ''}
+                              {Math.abs(performanceData.sixMonths.percentChange).toFixed(2)}%
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>1 Year</td>
+                            <td className={performanceData.year.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.year.change >= 0 ? '+' : ''}$
+                              {Math.abs(performanceData.year.change).toFixed(2)}
+                            </td>
+                            <td className={performanceData.year.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.year.change >= 0 ? '+' : ''}
+                              {Math.abs(performanceData.year.percentChange).toFixed(2)}%
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>YTD</td>
+                            <td className={performanceData.ytd.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.ytd.change >= 0 ? '+' : ''}$
+                              {Math.abs(performanceData.ytd.change).toFixed(2)}
+                            </td>
+                            <td className={performanceData.ytd.change >= 0 ? styles.positive : styles.negative}>
+                              {performanceData.ytd.change >= 0 ? '+' : ''}
+                              {Math.abs(performanceData.ytd.percentChange).toFixed(2)}%
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'chart' && (
+            <div className={styles.chartSection}>
+              <div className={styles.card}>
                 <div className={styles.chartToolbar}>
                   <div className={styles.timeFilters}>
-                    {timeFilters.map(filter => (
-                      <button 
+                    {timeFilters.map((filter) => (
+                      <button
                         key={filter.id}
                         className={`${styles.filterBtn} ${activeTimeFilter === filter.id ? styles.active : ''}`}
-                        onClick={() => setActiveTimeFilter(filter.id)}
+                        onClick={() => handleTimeFilterChange(filter.id)}
                       >
                         {filter.name}
                       </button>
                     ))}
                   </div>
-                  <div className={styles.chartTools}>
-                    <button className={styles.btnIcon}>
-                      <i className={styles.iconIndicator}></i>
-                    </button>
-                    <button className={styles.btnIcon}>
-                      <i className={styles.iconFullscreen}></i>
-                    </button>
-                  </div>
                 </div>
                 <div className={styles.chartContainer}>
-                  {/* Chart component would go here */}
-                  <div className={styles.placeholderChart}>Chart for {activeTimeFilter} interval</div>
-                </div>
+                    {historicalData.length > 0 ? (
+                      <CryptoChart
+                        data={historicalData}
+                        color={cryptoData.color}
+                        isIntraday={isIntradayFilter(activeTimeFilter)}
+                      />
+                    ) : (
+                      <div className={styles.noData}>No data available</div>
+                    )}
+                  </div>
               </div>
+            </div>
+          )}
+        </div>
 
-              {/* Right side with summary and news */}
-              <div className={styles.sidebarContainer}>
-                <div className={styles.card}>
-                  <h2>Summary</h2>
-                  <div className={styles.summaryGrid}>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Market Cap</span>
-                      <span className={styles.value}>${cryptoData.financials.marketCap.toFixed(2)} T</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Volume (24h)</span>
-                      <span className={styles.value}>${cryptoData.financials.volume24h.toFixed(2)} B</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Circulating Supply</span>
-                      <span className={styles.value}>{cryptoData.financials.circulatingSupply.toFixed(2)} M</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Max Supply</span>
-                      <span className={styles.value}>{cryptoData.financials.maxSupply} M</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>All-Time High</span>
-                      <span className={styles.value}>$69,042</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>52-Week Low</span>
-                      <span className={styles.value}>$27,845</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Dominance</span>
-                      <span className={styles.value}>51.3%</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <span className={styles.label}>Rank</span>
-                      <span className={styles.value}>#1</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className={styles.card}>
-                  <h2>Recent News</h2>
-                  <div className={`${styles.newsList} ${styles.preview}`}>
-                    {cryptoData.news.slice(0, 4).map(article => (
-                      <div key={article.id} className={styles.newsItem}>
-                        <h3>{article.title}</h3>
-                        <p className={styles.newsMeta}>{article.source} • {article.date}</p>
-                        <p className={styles.newsSnippet}>{article.snippet.substring(0, 100)}...</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className={styles.buttonContainer}>
-                    <button 
-                      className={styles.btnOutline} 
-                      onClick={() => setActiveTab('news')}
-                    >
-                      All News
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'chart' && (
-          <div className={styles.chartSection}>
-            <div className={styles.card}>
-              <div className={styles.chartToolbar}>
-                <div className={styles.timeFilters}>
-                  {timeFilters.map(filter => (
-                    <button 
-                      key={filter.id}
-                      className={`${styles.filterBtn} ${activeTimeFilter === filter.id ? styles.active : ''}`}
-                      onClick={() => setActiveTimeFilter(filter.id)}
-                    >
-                      {filter.name}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.chartTools}>
-                  <button className={styles.btnIcon} title="Indicators">
-                    <i className={styles.iconIndicator}></i>
-                  </button>
-                  <button className={styles.btnIcon} title="Fullscreen">
-                    <i className={styles.iconFullscreen}></i>
-                  </button>
-                </div>
-              </div>
-              <div className={styles.chartContainer}>
-                {/* Chart component would go here */}
-                <div className={styles.placeholderChart}>Chart for {activeTimeFilter} interval</div>
-              </div>
-              <div className={styles.buttonContainer}>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'news' && (
-          <div className={styles.newsSection}>
-            <div className={styles.card}>
-              <h2>News about {cryptoData.name}</h2>
-              <div className={`${styles.newsList} ${styles.full}`}>
-                {cryptoData.news.map(article => (
-                  <div key={article.id} className={styles.newsItem}>
-                    <h3>{article.title}</h3>
-                    <p className={styles.newsMeta}>{article.source} • {article.date}</p>
-                    <p className={styles.newsSnippet}>{article.snippet}</p>
-                    <a href={article.url} className={styles.newsLink}>Read more</a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'network' && (
-          <div className={styles.networkSection}>
-            <div className={styles.card}>
-              <h2>Network Data</h2>
-              <div className={styles.networkGrid}>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Hash Rate</span>
-                  <span className={styles.value}>{cryptoData.network.hashRate}</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Difficulty</span>
-                  <span className={styles.value}>{cryptoData.network.difficulty}</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Average Block Time</span>
-                  <span className={styles.value}>{cryptoData.network.blockTime}</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Block Reward</span>
-                  <span className={styles.value}>{cryptoData.network.blockReward} BTC</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Last Halving</span>
-                  <span className={styles.value}>{cryptoData.network.lastHalving}</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Next Halving</span>
-                  <span className={styles.value}>{cryptoData.network.nextHalving}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className={styles.card}>
-              <h2>Address Distribution</h2>
-              <div className={styles.distributionChart}>
-                {/* Address distribution chart would go here */}
-                <div className={styles.placeholderChart}>Distribution of addresses by balance</div>
-              </div>
-              <div className={styles.distributionGrid}>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Active Addresses (24h)</span>
-                  <span className={styles.value}>1.24M</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Unique Addresses</span>
-                  <span className={styles.value}>48.7M</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Whales Hold</span>
-                  <span className={styles.value}>41.3%</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.label}>Transactions/day</span>
-                  <span className={styles.value}>345.2K</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'analysis' && (
-          <div className={styles.analysisSection}>
-            <div className={styles.card}>
-              <h2>Market Sentiment</h2>
-              <div className={styles.sentimentContainer}>
-                <div className={styles.sentimentGauge}>
-                  <div className={styles.gaugeLabel}>Fear & Greed</div>
-                  <div className={styles.gaugeValue}>78</div>
-                  <div className={styles.gaugeMeter}>
-                    <div className={styles.meterBar}>
-                      <div className={styles.meterProgress} style={{
-                        width: '78%', 
-                        background: 'linear-gradient(to right, var(--secondary-color), var(--secondary-color))'
-                      }}></div>
-                    </div>
-                    <div className={styles.meterLabels}>
-                      <span>Extreme Fear</span>
-                      <span>Extreme Greed</span>
-                    </div>
-                  </div>
-                </div>
-                <div className={styles.sentimentStats}>
-                  <div className={styles.summaryItem}>
-                    <span className={styles.label}>Social Sentiment</span>
-                    <span className={styles.value}>Positive (72%)</span>
-                  </div>
-                  <div className={styles.summaryItem}>
-                    <span className={styles.label}>Social Media Mentions (24h)</span>
-                    <span className={styles.value}>158.7K</span>
-                  </div>
-                  <div className={styles.summaryItem}>
-                    <span className={styles.label}>Google Searches</span>
-                    <span className={styles.value}>+14% weekly</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className={styles.card}>
-              <h2>Price Predictions</h2>
-              <div className={styles.priceTargets}>
-                <div className={styles.priceRange}>
-                  <div className={styles.rangeContainer}>
-                    <div className={styles.currentMarker} style={{left: '45%'}}></div>
-                    <div className={styles.rangeBar} style={{
-                      background: 'var(--secondary-color)'
-                    }}></div>
-                    <div className={styles.lowPrice}>$45,000</div>
-                    <div className={styles.highPrice}>$85,000</div>
-                  </div>
-                  <div className={styles.currentPriceIndicator}>
-                    <div className={styles.label}>Current Price</div>
-                    <div className={styles.value}>${cryptoData.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                  </div>
-                </div>
-                <div className={styles.targetSummary}>
-                  <div className={styles.targetItem}>
-                    <div className={styles.label}>Average Target (1 year)</div>
-                    <div className={styles.value}>$72,500</div>
-                  </div>
-                  <div className={styles.targetItem}>
-                    <div className={styles.label}>Maximum Target</div>
-                    <div className={styles.value}>$85,000</div>
-                  </div>
-                  <div className={styles.targetItem}>
-                    <div className={styles.label}>Minimum Target</div>
-                    <div className={styles.value}>$45,000</div>
-                  </div>
-                  <div className={styles.targetItem}>
-                    <div className={styles.label}>Potential Growth</div>
-                    <div className={styles.value} style={{ color: 'var(--secondary-color)' }}>+13.5%</div>
-                  </div>
-                </div>
-                <div className={styles.technicalIndicators}>
-                  <h3>Technical Indicators</h3>
-                  <div className={styles.indicatorsSummary}>
-                    <div className={styles.indicatorItem}>
-                      <span className={styles.label}>RSI (14)</span>
-                      <span className={styles.value}>62.4</span>
-                      <span className={styles.signal} style={{ 
-                        backgroundColor: 'rgba(13, 202, 240, 0.1)',
-                        color: 'var(--secondary-color)'
-                      }}>Neutral</span>
-                    </div>
-                    <div className={styles.indicatorItem}>
-                      <span className={styles.label}>MACD</span>
-                      <span className={styles.value}>+245.3</span>
-                      <span className={styles.signal} style={{ 
-                        backgroundColor: 'rgba(13, 202, 240, 0.2)',
-                        color: 'var(--secondary-color)'
-                      }}>Buy</span>
-                    </div>
-                    <div className={styles.indicatorItem}>
-                      <span className={styles.label}>MA (50/200)</span>
-                      <span className={styles.value}>61.2K/58.7K</span>
-                      <span className={styles.signal} style={{ 
-                        backgroundColor: 'rgba(13, 202, 240, 0.2)',
-                        color: 'var(--secondary-color)'
-                      }}>Buy</span>
-                    </div>
-                    <div className={styles.indicatorItem}>
-                      <span className={styles.label}>Bollinger Bands</span>
-                      <span className={styles.value}>62.5K-65.2K</span>
-                      <span className={styles.signal} style={{ 
-                        backgroundColor: 'rgba(13, 202, 240, 0.1)',
-                        color: 'var(--secondary-color)'
-                      }}>Neutral</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <div className={styles.tradingActions}>
+          <button className={styles.setAlertButton}>Set Price Alert</button>
+        </div>
       </div>
-    </div>
+    </ApiErrorBoundary>
   );
 };
 
-// PropTypes for property validation
 CryptoDetail.propTypes = {
-  cryptoSymbol: PropTypes.string
-};
-
-// Default properties
-CryptoDetail.defaultProps = {
-  cryptoSymbol: "BTC"
+  cryptoSymbolProp: PropTypes.string
 };
 
 export default CryptoDetail;

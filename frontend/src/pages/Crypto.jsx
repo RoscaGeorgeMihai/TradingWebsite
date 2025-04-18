@@ -2,305 +2,282 @@ import React, { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from "../styles/Crypto.module.css";
 import { Link } from 'react-router-dom';
+import marketstackApi from "../services/marketstackApi"; // Update with the correct path
 
 const Crypto = () => {
     const [activeIndex, setActiveIndex] = useState(0);
     const [searchTerm, setSearchTerm] = useState('');
     const [timeInterval, setTimeInterval] = useState('1d');
     const [activeCategory, setActiveCategory] = useState('all');
+    const [cryptocurrencies, setCryptocurrencies] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const scrollContainerRef = useRef(null);
+
+    // Crypto configuration - metadata not provided by the API
+    const cryptoConfig = {
+        "btcusd": { name: "Bitcoin", color: "#f7931a", category: "l1" },
+        "ethusd": { name: "Ethereum", color: "#627eea", category: "l1" },
+        "usdtusd": { name: "Tether", color: "#26a17b", category: "stable" },
+        "bnbusd": { name: "Binance Coin", color: "#f0b90b", category: "l1" },
+        "solusd": { name: "Solana", color: "#7b5fe7", category: "l1" },
+        "dogeusd": { name: "Dogecoin", color: "#c2a633", category: "meme" }
+    };
+
+    // List of crypto symbols to fetch
+    const cryptoSymbols = ["btcusd", "ethusd", "usdtusd", "bnbusd", "solusd", "dogeusd"];
 
     // Categories for coin types
     const categories = [
         { id: 'all', name: 'All Coins' },
         { id: 'stable', name: 'Stablecoins' },
-        { id: 'meme', name: 'Meme Coins' }
+        { id: 'meme', name: 'Meme Coins' },
+        { id: 'l1', name: 'Layer 1s' }
     ];
 
-    const cryptocurrencies = [
-        { 
-            symbol: "BTC", 
-            name: "Bitcoin", 
-            price: "68,542.30", 
-            change: "+2.45%", 
-            color: "#f7931a",
-            category: "l1",
-            marketCap: "$1.32T",
-            volume: "$28.7B",
-            priceHistory: {
-                '1d': [
-                    { name: '1d', price: 67000 },
-                    { name: '12h', price: 68000 },
-                    { name: '6h', price: 68500 },
-                    { name: '3h', price: 69000 },
-                    { name: 'Now', price: 68542 }
-                ],
-                '1w': [
-                    { name: '7d', price: 65400 },
-                    { name: '5d', price: 66200 },
-                    { name: '3d', price: 67000 },
-                    { name: '1d', price: 68000 },
-                    { name: 'Now', price: 68542 }
-                ],
-                '1m': [
-                    { name: '30d', price: 62000 },
-                    { name: '20d', price: 64500 },
-                    { name: '10d', price: 66700 },
-                    { name: '5d', price: 67500 },
-                    { name: 'Now', price: 68542 }
-                ],
-                '1y': [
-                    { name: 'Jan', price: 42000 },
-                    { name: 'Mar', price: 48000 },
-                    { name: 'Jun', price: 53000 },
-                    { name: 'Sep', price: 60000 },
-                    { name: 'Now', price: 68542 }
-                ],
-                'max': [
-                    { name: '2020', price: 10000 },
-                    { name: '2021', price: 45000 },
-                    { name: '2022', price: 38000 },
-                    { name: '2023', price: 50000 },
-                    { name: 'Now', price: 68542 }
-                ]
+    // Helper function to fetch data for a specific time period
+    const fetchCryptoDataForTimeRange = async (symbol, interval) => {
+        const now = new Date();
+        let fromDate;
+
+        switch (interval) {
+            case '1d':
+                fromDate = new Date(now);
+                fromDate.setDate(now.getDate() - 1);
+                break;
+            case '1w':
+                fromDate = new Date(now);
+                fromDate.setDate(now.getDate() - 7);
+                break;
+            case '1m':
+                fromDate = new Date(now);
+                fromDate.setMonth(now.getMonth() - 1);
+                break;
+            case '1y':
+                fromDate = new Date(now);
+                fromDate.setFullYear(now.getFullYear() - 1);
+                break;
+            case 'max':
+                fromDate = new Date('2020-01-01'); // Arbitrary start date for max
+                break;
+            default:
+                fromDate = new Date(now);
+                fromDate.setDate(now.getDate() - 1);
+        }
+
+        // Call the API
+        const intervalType = interval === '1d' ? 'daily' : 'daily'; // Can be adjusted based on API capabilities
+        return await marketstackApi.getCryptoData(symbol, fromDate, now, intervalType);
+    };
+
+    // Format historical data into the structure needed for charts
+    const formatPriceHistory = (apiData, timeInterval) => {
+        if (!apiData || !Array.isArray(apiData) || apiData.length === 0) {
+            return [];
+        }
+        
+        // Sort by date ascending
+        const sortedData = [...apiData].sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Format based on the timeInterval
+        switch (timeInterval) {
+            case '1d':{
+                // Get the last day of data
+                const last24h = takeEvenly(sortedData, 5);
+                return last24h.map((item, index) => {
+                    const labels = ['1d', '12h', '6h', '3h', 'Now'];
+                    return {
+                        name: labels[index] || `Point ${index}`,
+                        price: item.close
+                    };
+                });
             }
-        },
-        { 
-            symbol: "ETH", 
-            name: "Ethereum", 
-            price: "3,782.15", 
-            change: "+1.87%", 
-            color: "#627eea",
-            category: "l1",
-            marketCap: "$452.7B",
-            volume: "$14.3B",
-            priceHistory: {
-                '1d': [
-                    { name: '1d', price: 3700 },
-                    { name: '12h', price: 3750 },
-                    { name: '6h', price: 3770 },
-                    { name: '3h', price: 3790 },
-                    { name: 'Now', price: 3782 }
-                ],
-                '1w': [
-                    { name: '7d', price: 3600 },
-                    { name: '5d', price: 3650 },
-                    { name: '3d', price: 3700 },
-                    { name: '1d', price: 3750 },
-                    { name: 'Now', price: 3782 }
-                ],
-                '1m': [
-                    { name: '30d', price: 3300 },
-                    { name: '20d', price: 3450 },
-                    { name: '10d', price: 3600 },
-                    { name: '5d', price: 3700 },
-                    { name: 'Now', price: 3782 }
-                ],
-                '1y': [
-                    { name: 'Jan', price: 2200 },
-                    { name: 'Mar', price: 2600 },
-                    { name: 'Jun', price: 2900 },
-                    { name: 'Sep', price: 3400 },
-                    { name: 'Now', price: 3782 }
-                ],
-                'max': [
-                    { name: '2020', price: 250 },
-                    { name: '2021', price: 3000 },
-                    { name: '2022', price: 2000 },
-                    { name: '2023', price: 2800 },
-                    { name: 'Now', price: 3782 }
-                ]
+            case '1w':{
+                // Get the last 7 days of data
+                const last7d = takeEvenly(sortedData, 5);
+                return last7d.map((item, index) => {
+                    const labels = ['7d', '5d', '3d', '1d', 'Now'];
+                    return {
+                        name: labels[index] || `Point ${index}`,
+                        price: item.close
+                    };
+                });
             }
-        },
-        { 
-            symbol: "USDT", 
-            name: "Tether", 
-            price: "1.00", 
-            change: "+0.01%", 
-            color: "#26a17b",
-            category: "stable",
-            marketCap: "$89.2B",
-            volume: "$48.5B",
-            priceHistory: {
-                '1d': [
-                    { name: '1d', price: 1.0 },
-                    { name: '12h', price: 1.0 },
-                    { name: '6h', price: 1.0 },
-                    { name: '3h', price: 1.0 },
-                    { name: 'Now', price: 1.0 }
-                ],
-                '1w': [
-                    { name: '7d', price: 0.99 },
-                    { name: '5d', price: 1.0 },
-                    { name: '3d', price: 1.0 },
-                    { name: '1d', price: 1.0 },
-                    { name: 'Now', price: 1.0 }
-                ],
-                '1m': [
-                    { name: '30d', price: 0.99 },
-                    { name: '20d', price: 0.99 },
-                    { name: '10d', price: 1.0 },
-                    { name: '5d', price: 1.0 },
-                    { name: 'Now', price: 1.0 }
-                ],
-                '1y': [
-                    { name: 'Jan', price: 1.0 },
-                    { name: 'Mar', price: 1.0 },
-                    { name: 'Jun', price: 1.0 },
-                    { name: 'Sep', price: 1.0 },
-                    { name: 'Now', price: 1.0 }
-                ],
-                'max': [
-                    { name: '2020', price: 1.0 },
-                    { name: '2021', price: 1.0 },
-                    { name: '2022', price: 1.0 },
-                    { name: '2023', price: 1.0 },
-                    { name: 'Now', price: 1.0 }
-                ]
+            case '1m': {
+                // For monthly data, take 5 points
+                const monthlyData = takeEvenly(sortedData, 5);
+                return monthlyData.map((item, index) => {
+                    const labels = ['30d', '20d', '10d', '5d', 'Now'];
+                    return {
+                        name: labels[index] || `Point ${index}`,
+                        price: item.close
+                    };
+                });
+        }    
+            case '1y':{
+                // For yearly data, take 5 points
+                const yearlyData = takeEvenly(sortedData, 5);
+                return yearlyData.map((item, index) => {
+                    const labels = ['Jan', 'Mar', 'Jun', 'Sep', 'Now'];
+                    return {
+                        name: labels[index] || `Point ${index}`,
+                        price: item.close
+                    };
+                });
+            }   
+            case 'max':{
+                // For max data, take yearly points
+                const maxData = takeEvenly(sortedData, 5);
+                return maxData.map((item, index) => {
+                    // Get year from date
+                    const year = new Date(item.date).getFullYear();
+                    const labels = ['2020', '2021', '2022', '2023', 'Now'];
+                    return {
+                        name: labels[index] || year.toString(),
+                        price: item.close
+                    };
+                });
             }
-        },
-        { 
-            symbol: "BNB", 
-            name: "Binance Coin", 
-            price: "600.75", 
-            change: "+3.12%", 
-            color: "#f0b90b",
-            category: "l1",
-            marketCap: "$91.7B",
-            volume: "$4.2B",
-            priceHistory: {
-                '1d': [
-                    { name: '1d', price: 590 },
-                    { name: '12h', price: 595 },
-                    { name: '6h', price: 598 },
-                    { name: '3h', price: 602 },
-                    { name: 'Now', price: 600 }
-                ],
-                '1w': [
-                    { name: '7d', price: 570 },
-                    { name: '5d', price: 580 },
-                    { name: '3d', price: 590 },
-                    { name: '1d', price: 595 },
-                    { name: 'Now', price: 600 }
-                ],
-                '1m': [
-                    { name: '30d', price: 530 },
-                    { name: '20d', price: 550 },
-                    { name: '10d', price: 570 },
-                    { name: '5d', price: 590 },
-                    { name: 'Now', price: 600 }
-                ],
-                '1y': [
-                    { name: 'Jan', price: 320 },
-                    { name: 'Mar', price: 380 },
-                    { name: 'Jun', price: 450 },
-                    { name: 'Sep', price: 540 },
-                    { name: 'Now', price: 600 }
-                ],
-                'max': [
-                    { name: '2020', price: 40 },
-                    { name: '2021', price: 520 },
-                    { name: '2022', price: 280 },
-                    { name: '2023', price: 420 },
-                    { name: 'Now', price: 600 }
-                ]
-            }
-        },
-        { 
-            symbol: "SOL", 
-            name: "Solana", 
-            price: "178.45", 
-            change: "+4.56%", 
-            color: "#7b5fe7",
-            category: "l1",
-            marketCap: "$76.3B",
-            volume: "$7.1B",
-            priceHistory: {
-                '1d': [
-                    { name: '1d', price: 170 },
-                    { name: '12h', price: 172 },
-                    { name: '6h', price: 175 },
-                    { name: '3h', price: 177 },
-                    { name: 'Now', price: 178 }
-                ],
-                '1w': [
-                    { name: '7d', price: 160 },
-                    { name: '5d', price: 165 },
-                    { name: '3d', price: 170 },
-                    { name: '1d', price: 174 },
-                    { name: 'Now', price: 178 }
-                ],
-                '1m': [
-                    { name: '30d', price: 135 },
-                    { name: '20d', price: 150 },
-                    { name: '10d', price: 162 },
-                    { name: '5d', price: 170 },
-                    { name: 'Now', price: 178 }
-                ],
-                '1y': [
-                    { name: 'Jan', price: 70 },
-                    { name: 'Mar', price: 95 },
-                    { name: 'Jun', price: 120 },
-                    { name: 'Sep', price: 150 },
-                    { name: 'Now', price: 178 }
-                ],
-                'max': [
-                    { name: '2020', price: 5 },
-                    { name: '2021', price: 180 },
-                    { name: '2022', price: 40 },
-                    { name: '2023', price: 100 },
-                    { name: 'Now', price: 178 }
-                ]
-            }
-        },
-        { 
-            symbol: "DOGE", 
-            name: "Dogecoin", 
-            price: "0.12", 
-            change: "+5.67%", 
-            color: "#c2a633",
-            category: "meme",
-            marketCap: "$17.1B",
-            volume: "$2.4B",
-            priceHistory: {
-                '1d': [
-                    { name: '1d', price: 0.118 },
-                    { name: '12h', price: 0.119 },
-                    { name: '6h', price: 0.121 },
-                    { name: '3h', price: 0.122 },
-                    { name: 'Now', price: 0.12 }
-                ],
-                '1w': [
-                    { name: '7d', price: 0.115 },
-                    { name: '5d', price: 0.116 },
-                    { name: '3d', price: 0.118 },
-                    { name: '1d', price: 0.119 },
-                    { name: 'Now', price: 0.12 }
-                ],
-                '1m': [
-                    { name: '30d', price: 0.10 },
-                    { name: '20d', price: 0.105 },
-                    { name: '10d', price: 0.11 },
-                    { name: '5d', price: 0.115 },
-                    { name: 'Now', price: 0.12 }
-                ],
-                '1y': [
-                    { name: 'Jan', price: 0.08 },
-                    { name: 'Mar', price: 0.09 },
-                    { name: 'Jun', price: 0.095 },
-                    { name: 'Sep', price: 0.105 },
-                    { name: 'Now', price: 0.12 }
-                ],
-                'max': [
-                    { name: '2020', price: 0.002 },
-                    { name: '2021', price: 0.6 },
-                    { name: '2022', price: 0.15 },
-                    { name: '2023', price: 0.1 },
-                    { name: 'Now', price: 0.12 }
-                ]
+            default:{
+                return sortedData.map(item => ({
+                    name: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    price: item.close
+                }));
             }
         }
-    ];
+    };
+
+    // Helper function to take evenly spaced items from an array
+    const takeEvenly = (array, count) => {
+        const result = [];
+        if (array.length <= count) {
+            return array;
+        }
+        
+        const interval = Math.floor((array.length - 1) / (count - 1));
+        for (let i = 0; i < count - 1; i++) {
+            result.push(array[i * interval]);
+        }
+        result.push(array[array.length - 1]); // Always include the last item
+        
+        return result;
+    };
+
+    // Format large numbers (market cap, volume)
+    const formatLargeNumber = (number) => {
+        if (number >= 1e12) {
+            return `$${(number / 1e12).toFixed(2)}T`;
+        } else if (number >= 1e9) {
+            return `$${(number / 1e9).toFixed(2)}B`;
+        } else if (number >= 1e6) {
+            return `$${(number / 1e6).toFixed(2)}M`;
+        } else {
+            return `$${Math.floor(number).toLocaleString()}`;
+        }
+    };
+
+    // Format price
+    const formatPrice = (price) => {
+        if (price >= 1000) {
+            return price.toLocaleString(undefined, { 
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        } else if (price >= 1) {
+            return price.toFixed(2);
+        } else {
+            return price.toPrecision(2);
+        }
+    };
+
+    // Initialize data when component mounts
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                // Fetch current quotes for all symbols
+                const quotes = await marketstackApi.getMultipleStockQuotes(
+                    cryptoSymbols
+                );
+                
+                // Create an array to hold all promises for historical data
+                const historyPromises = [];
+                
+                // For each crypto, fetch the historical data for all time intervals
+                for (const symbol of cryptoSymbols) {
+                    const timeIntervalsToFetch = ['1d', '1w', '1m', '1y', 'max'];
+                    
+                    for (const interval of timeIntervalsToFetch) {
+                        historyPromises.push(
+                            fetchCryptoDataForTimeRange(symbol, interval)
+                                .then(data => ({ symbol, interval, data }))
+                        );
+                    }
+                }
+                
+                // Wait for all historical data to be fetched
+                const historicalResults = await Promise.all(historyPromises);
+                
+                // Process quotes and historical data
+                const processedCryptos = cryptoSymbols.map(symbol => {
+                    const quote = quotes[symbol] || {};
+                    const config = cryptoConfig[symbol] || {};
+                    
+                    // Build priceHistory object for each time interval
+                    const priceHistory = {};
+                    
+                    for (const interval of ['1d', '1w', '1m', '1y', 'max']) {
+                        const historyResult = historicalResults.find(
+                            result => result.symbol === symbol && result.interval === interval
+                        );
+                        
+                        if (historyResult) {
+                            priceHistory[interval] = formatPriceHistory(historyResult.data, interval);
+                        } else {
+                            priceHistory[interval] = [];
+                        }
+                    }
+                    
+                    // Estimate market cap (price * arbitrary number for circulating supply)
+                    const estimatedSupply = {
+                        "btcusd": 19000000,
+                        "ethusd": 120000000,
+                        "usdtusd": 83000000000,
+                        "bnbusd": 155000000,
+                        "solusd": 400000000,
+                        "dogeusd": 140000000000
+                    };
+                    
+                    const supply = estimatedSupply[symbol] || 1000000;
+                    const marketCap = quote.price * supply;
+                    
+                    // Format the data for display
+                    return {
+                        symbol: symbol.toUpperCase().replace('USD', ''),
+                        name: config.name || symbol,
+                        price: formatPrice(quote.price || 0),
+                        change: quote.changePercent >= 0 ? `+${quote.changePercent.toFixed(2)}%` : `${quote.changePercent.toFixed(2)}%`,
+                        color: config.color || "#999999",
+                        category: config.category || "other",
+                        marketCap: formatLargeNumber(marketCap),
+                        volume: formatLargeNumber(quote.volume || 0),
+                        priceHistory: priceHistory
+                    };
+                });
+                
+                setCryptocurrencies(processedCryptos);
+                setLoading(false);
+            } catch (err) {
+                console.error("Error fetching crypto data:", err);
+                setError("Failed to load cryptocurrency data. Please try again later.");
+                setLoading(false);
+            }
+        };
+        
+        fetchData();
+    }, []);
 
     // Filter cryptocurrencies based on search term and category
     const filteredCryptos = cryptocurrencies.filter(crypto => {
@@ -310,9 +287,10 @@ const Crypto = () => {
         return matchesSearch && matchesCategory;
     });
 
+    // Auto-scroll effect
     useEffect(() => {
         const scrollInterval = setInterval(() => {
-            if (scrollContainerRef.current) {
+            if (scrollContainerRef.current && filteredCryptos.length > 0) {
                 const nextIndex = (activeIndex + 1) % filteredCryptos.length;
                 setActiveIndex(nextIndex);
                 
@@ -329,7 +307,7 @@ const Crypto = () => {
         }, 5000);
 
         return () => clearInterval(scrollInterval);
-    }, [activeIndex, filteredCryptos.length]); // Adăugăm filteredCryptos.length la array-ul de dependențe
+    }, [activeIndex, filteredCryptos.length]);
 
     const handleTimeIntervalChange = (interval) => {
         setTimeInterval(interval);
@@ -342,6 +320,36 @@ const Crypto = () => {
         { value: '1y', label: '1Y' },
         { value: 'max', label: 'MAX' }
     ];
+
+    // Render loading state
+    if (loading) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.loadingContainer}>
+                    <div className={styles.loadingSpinner}></div>
+                    <p>Loading cryptocurrency data...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Render error state
+    if (error) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.errorContainer}>
+                    <h2>Error</h2>
+                    <p>{error}</p>
+                    <button 
+                        className={styles.retryButton}
+                        onClick={() => window.location.reload()}
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.container}>
@@ -446,7 +454,7 @@ const Crypto = () => {
             )}
             
             {/* List of other cryptocurrencies */}
-            <div className={styles.cryptoGrid}>
+            <div className={styles.cryptoGrid} ref={scrollContainerRef}>
                 {filteredCryptos.slice(1).map((crypto) => (
                     <div key={crypto.symbol} className={styles.cryptoCard}>
                         <div className={styles.cryptoHeader}>
@@ -493,7 +501,7 @@ const Crypto = () => {
                                     <span className={styles.statValue}>{crypto.volume}</span>
                                 </div>
                             </div>
-                            <Link to={`/crypto/${filteredCryptos[0].symbol}`} className={styles.tradeButton}>
+                            <Link to={`/crypto/${crypto.symbol}`} className={styles.tradeButton}>
                                 Buy
                             </Link>
                         </div>
