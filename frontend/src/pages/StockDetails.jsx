@@ -534,7 +534,6 @@ const StockDetail = ({ stockSymbolProp }) => {
     { id: 'chart', name: 'Chart' },
     { id: 'fundamentals', name: 'Fundamentals' },
     { id: 'market-data', name: 'Market Data' },
-    { id: 'cache-info', name: 'API Cache' }, // New tab to show cache information
   ]
 
   const timeFilters = [
