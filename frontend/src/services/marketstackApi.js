@@ -11,11 +11,25 @@ const CACHE_DURATIONS = {
 const cache = new Map();
 const pendingRequests = new Map();
 
+// Presetări pentru simboluri populare - ajută la generarea unor date mai realiste
+const STOCK_BASICS = {
+  AAPL: { name: 'Apple Inc.', sector: 'Technology', industry: 'Consumer Electronics', basePrice: 175 },
+  MSFT: { name: 'Microsoft Corporation', sector: 'Technology', industry: 'Software', basePrice: 330 },
+  GOOGL: { name: 'Alphabet Inc.', sector: 'Technology', industry: 'Internet Content & Information', basePrice: 140 },
+  AMZN: { name: 'Amazon.com Inc.', sector: 'Consumer Cyclical', industry: 'Internet Retail', basePrice: 145 },
+  TSLA: { name: 'Tesla, Inc.', sector: 'Consumer Cyclical', industry: 'Auto Manufacturers', basePrice: 250 },
+  META: { name: 'Meta Platforms, Inc.', sector: 'Technology', industry: 'Internet Content & Information', basePrice: 340 },
+  NVDA: { name: 'NVIDIA Corporation', sector: 'Technology', industry: 'Semiconductors', basePrice: 800 },
+  BTCUSD: { name: 'Bitcoin / USD', sector: 'Cryptocurrency', industry: 'Digital Currency', basePrice: 62000 },
+  ETHUSD: { name: 'Ethereum / USD', sector: 'Cryptocurrency', industry: 'Digital Currency', basePrice: 3400 },
+};
+
 const withCache = async (cacheKey, fetchFunction, type = 'quote') => {
   const cachedData = cache.get(cacheKey);
   const cacheDuration = CACHE_DURATIONS[type] || CACHE_DURATIONS.quote;
   
   if (cachedData && cachedData.timestamp > Date.now() - cacheDuration) {
+    console.log(`[Cache Hit] Using cached data for ${cacheKey}`);
     return cachedData.data;
   }
   
@@ -35,8 +49,12 @@ const marketstackClient = axios.create({
   }
 });
 
-// Generează date implicite dacă API-ul nu răspunde
+// Funcție îmbunătățită pentru generarea datelor de fallback
 const generateFallbackData = (symbol) => {
+  // Verifică dacă avem presetări pentru acest simbol
+  const stockPreset = STOCK_BASICS[symbol] || null;
+  
+  // Generare consistentă bazată pe simbol (pentru simboluri care nu sunt în presetări)
   const getNumericValue = (str) => {
     let val = 0;
     for (let i = 0; i < str.length; i++) {
@@ -46,30 +64,57 @@ const generateFallbackData = (symbol) => {
   };
 
   const seed = getNumericValue(symbol);
-  const basePrice = (seed % 100) + 50;
+  // Folosește valoarea de bază din presetări sau generează una bazată pe simbol
+  const basePrice = stockPreset ? stockPreset.basePrice : (seed % 100) + 50;
   const currentDate = new Date();
   
-  const changePercent = (Math.sin(seed) * 3).toFixed(2);
-  const change = (basePrice * changePercent / 100).toFixed(2);
-  const price = basePrice;
+  // Determine if it's a crypto symbol
+  const isCrypto = symbol.toUpperCase().includes('USD');
+  
+  // Creează o variație aleatoare de preț, dar deterministă bazată pe simbol
+  const seedRandom = () => {
+    const x = Math.sin(seed * 9999) * 10000;
+    return x - Math.floor(x);
+  };
+  
+  // Volatilitate mai mare pentru crypto
+  const volatility = isCrypto ? 0.05 : 0.02;
+  const changePercent = (seedRandom() * 2 - 1) * volatility * 100;
+  const change = (basePrice * changePercent / 100);
+  
+  // Generare OHLC mai realistă
+  const dayVolatility = basePrice * volatility * 0.5;
+  const open = basePrice - change / 2 + (seedRandom() - 0.5) * dayVolatility;
+  const high = Math.max(basePrice, open) + seedRandom() * dayVolatility;
+  const low = Math.min(basePrice, open) - seedRandom() * dayVolatility;
+  
+  // Volume bazat pe preț (acțiunile cu preț mare tind să aibă volume mai mici)
+  const volumeBase = isCrypto ? 1000000 : 500000;
+  const volumeMultiplier = isCrypto ? 10 : (basePrice > 200 ? 0.5 : (basePrice > 100 ? 1 : 2));
+  const volume = Math.floor((volumeBase + (seed % 500000)) * volumeMultiplier);
   
   return {
     symbol: symbol,
-    price: price,
-    change: parseFloat(change),
-    changePercent: parseFloat(changePercent),
-    high: price * 1.02,
-    low: price * 0.98,
-    open: price - parseFloat(change) / 2,
-    volume: 100000 + (seed % 900000),
+    price: parseFloat(basePrice.toFixed(2)),
+    change: parseFloat(change.toFixed(2)),
+    changePercent: parseFloat(changePercent.toFixed(2)),
+    high: parseFloat(high.toFixed(2)),
+    low: parseFloat(low.toFixed(2)),
+    open: parseFloat(open.toFixed(2)),
+    volume: volume,
     timestamp: currentDate.toISOString(),
     isSimulated: true
   };
 };
 
-// Generare date istorice simulate pentru cazul în care API-ul nu poate oferi date
-const generateSimulatedHistoricalData = (symbol, fromDate, toDate) => {
+// Funcție îmbunătățită de generare a datelor istorice
+const generateSimulatedHistoricalData = (symbol, fromDate, toDate, interval = 'daily') => {
   const data = [];
+  
+  // Verifică dacă avem presetări pentru acest simbol
+  const stockPreset = STOCK_BASICS[symbol] || null;
+  
+  // Generare consistentă bazată pe simbol
   const getNumericValue = (str) => {
     let val = 0;
     for (let i = 0; i < str.length; i++) {
@@ -79,47 +124,123 @@ const generateSimulatedHistoricalData = (symbol, fromDate, toDate) => {
   };
 
   const seed = getNumericValue(symbol);
-  const basePrice = (seed % 100) + 50;
-  const volatility = basePrice * 0.015;
   
-  const currentDate = new Date(fromDate);
-  const endDate = new Date(toDate);
+  // Folosește valoarea de bază din presetări sau generează una bazată pe simbol
+  const basePrice = stockPreset ? stockPreset.basePrice : (seed % 100) + 50;
   
-  const totalDays = Math.min(
-    Math.floor((endDate - currentDate) / (24 * 60 * 60 * 1000)),
-    100
-  );
+  // Verifică dacă este un simbol crypto
+  const isCrypto = symbol.toUpperCase().includes('USD');
   
-  const trendDirection = (seed % 2 === 0) ? 1 : -1;
-  const trendStrength = (seed % 10) / 1000;
+  // Volatilitate mai mare pentru crypto
+  const volatility = basePrice * (isCrypto ? 0.04 : 0.015);
+  
+  // Convertim datele în obiecte Date
+  const start = new Date(fromDate);
+  const end = new Date(toDate);
+  
+  // Determinăm pasul de timp bazat pe interval
+  let step = 24 * 60 * 60 * 1000; // 1 zi în milisecunde (default pentru daily)
+  
+  if (interval === '15min' || interval === '15mins') {
+    step = 15 * 60 * 1000;
+  } else if (interval === '1hour' || interval === 'hourly') {
+    step = 60 * 60 * 1000;
+  }
+  
+  // Limitează numărul de puncte pentru a evita generarea prea multor date
+  const totalSteps = Math.ceil((end - start) / step);
+  const maxSteps = interval === 'daily' ? 500 : 1000;
+  const actualSteps = Math.min(totalSteps, maxSteps);
+  
+  // Recalculăm step-ul dacă este necesar pentru a acoperi intervalul cu maxSteps
+  const effectiveStep = totalSteps > maxSteps ? (end - start) / maxSteps : step;
+  
+  // Generăm un trend general pentru întreaga perioadă (-1 = bearish, 1 = bullish)
+  const overallTrend = ((seed % 10) - 5) / 10; // Valoare între -0.5 și 0.5
+  
+  // Funcție pentru trend fluctuant
+  const getTrendAtStep = (step, totalSteps) => {
+    // Creăm un trend sinusoidal 
+    const baseFreq = 2 * Math.PI / (totalSteps || 100); // O perioadă completă
+    const secondaryFreq = 6 * Math.PI / (totalSteps || 100); // Fluctuații secundare
+    
+    return (
+      overallTrend + 
+      Math.sin(step * baseFreq + seed) * 0.3 + // Trend principal sinusoidal
+      Math.sin(step * secondaryFreq + seed * 2) * 0.05 // Fluctuații mici secundare
+    );
+  };
+  
+  // Funcție pentru a genera număr pseudo-aleator dar deterministic
+  const seedRandom = (stepSeed) => {
+    const x = Math.sin(seed + stepSeed * 9999) * 10000;
+    return x - Math.floor(x);
+  };
   
   let lastPrice = basePrice;
   
-  for (let i = 0; i <= totalDays; i++) {
-    const randomComponent = (Math.random() * 2 - 1) * volatility;
-    const trendComponent = trendDirection * i * trendStrength * basePrice;
+  for (let i = 0; i < actualSteps; i++) {
+    const currentDate = new Date(start.getTime() + i * effectiveStep);
+    
+    // Calculăm factorul de trend pentru acest pas
+    const trend = getTrendAtStep(i, actualSteps);
+    
+    // Componentă aleatoare (bazată pe seed și pas pentru determinism)
+    const randomComponent = (seedRandom(i) * 2 - 1) * volatility;
+    
+    // Componentă de trend
+    const trendComponent = trend * volatility * 0.5;
+    
+    // Calculăm variația totală a prețului
     const totalChange = randomComponent + trendComponent;
     
+    // Actualizăm prețul
     lastPrice += totalChange;
-    lastPrice = Math.max(lastPrice, 1);
+    lastPrice = Math.max(lastPrice, 0.01); // Prețul nu poate fi negativ
     
-    const date = new Date(currentDate);
-    date.setDate(currentDate.getDate() + i);
+    // Generăm variații OHLC pentru data curentă
+    const dailyVolatility = volatility * seedRandom(i + 1000);
     
-    const dailyVolatility = volatility * Math.random();
-    const open = lastPrice - (Math.random() * 0.6 - 0.3) * dailyVolatility;
-    const high = Math.max(open, lastPrice) + Math.random() * dailyVolatility;
-    const low = Math.min(open, lastPrice) - Math.random() * dailyVolatility;
+    // Creăm variații mai realiste pentru OHLC
+    let open, high, low, close;
+    
+    if (seedRandom(i) > 0.5) {
+      // Zi cu trend ascendent
+      open = lastPrice - dailyVolatility * seedRandom(i + 2000);
+      close = lastPrice;
+      high = Math.max(open, close) + dailyVolatility * seedRandom(i + 3000);
+      low = Math.min(open, close) - dailyVolatility * 0.5 * seedRandom(i + 4000);
+    } else {
+      // Zi cu trend descendent
+      open = lastPrice + dailyVolatility * seedRandom(i + 2000);
+      close = lastPrice;
+      high = open + dailyVolatility * seedRandom(i + 3000);
+      low = close - dailyVolatility * seedRandom(i + 4000);
+    }
+    
+    // Asigurăm că valorile sunt rezonabile
+    high = Math.max(high, Math.max(open, close));
+    low = Math.min(low, Math.min(open, close));
+    
+    // Generăm volum care variază în funcție de dimensiunea mișcării prețului
+    const priceMove = Math.abs(close - open);
+    const movePercentage = priceMove / ((open + close) / 2);
+    
+    // Volume mai mare pentru mișcări mai mari de preț
+    const volumeBase = isCrypto ? 5000000 : 500000;
+    const volumeVariation = movePercentage * 5;
+    const volume = Math.floor((volumeBase + seedRandom(i + 5000) * volumeBase) * (1 + volumeVariation));
     
     data.push({
-      date: date.toISOString(),
+      date: currentDate.toISOString(),
       symbol: symbol,
       open: parseFloat(open.toFixed(2)),
       high: parseFloat(high.toFixed(2)),
       low: parseFloat(low.toFixed(2)),
-      close: parseFloat(lastPrice.toFixed(2)),
-      volume: Math.floor(Math.random() * 1000000) + 100000,
-      price: parseFloat(lastPrice.toFixed(2))
+      close: parseFloat(close.toFixed(2)),
+      volume: volume,
+      price: parseFloat(close.toFixed(2)),
+      isSimulated: true
     });
   }
   
@@ -140,7 +261,8 @@ const formatHistoricalData = (data, symbol) => {
     low: typeof item.low === 'number' ? item.low : parseFloat(item.low) || 0,
     close: typeof item.close === 'number' ? item.close : parseFloat(item.close) || 0,
     volume: typeof item.volume === 'number' ? item.volume : parseInt(item.volume) || 0,
-    price: typeof item.close === 'number' ? item.close : parseFloat(item.close) || 0
+    price: typeof item.close === 'number' ? item.close : parseFloat(item.close) || 0,
+    isSimulated: item.isSimulated || false
   }));
   
   return formatted.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -155,8 +277,9 @@ const saveCacheToLocalStorage = () => {
         return acc;
       }, {});
       localStorage.setItem('marketstackApiCache', JSON.stringify(serializedCache));
+      console.log(`[Cache] Saved ${Object.keys(serializedCache).length} items to localStorage`);
     } catch (e) {
-      console.log('Error while trying to save cache to local storage');
+      console.log('Error while trying to save cache to local storage', e);
     }
   }
 };
@@ -171,9 +294,10 @@ const loadCacheFromLocalStorage = () => {
         Object.entries(parsedCache).forEach(([key, value]) => {
           cache.set(key, value);
         });
+        console.log(`[Cache] Loaded ${Object.keys(parsedCache).length} items from localStorage`);
       }
     } catch (e) {
-      console.log('Error while trying to load cache from local storage');
+      console.log('Error while trying to load cache from local storage', e);
     }
   }
 };
@@ -189,7 +313,7 @@ if (typeof window !== 'undefined') {
 
 // FUNCȚIILE API PRINCIPALE
 
-// Obținerea cotației curente pentru un simbol
+// Îmbunătățim funcția de obținere a cotației pentru a încorpora mai bine datele simulate
 const getStockQuote = async (symbol) => {
   try {
     const cacheKey = `quote-${symbol}`;
@@ -200,14 +324,19 @@ const getStockQuote = async (symbol) => {
     
     for (const [batchKey, requestPromise] of pendingRequests.entries()) {
       if (batchKey.startsWith('quotes-') && batchKey.includes(symbol)) {
-        const resultMap = await requestPromise;
-        
-        if (resultMap[symbol]) {
-          cache.set(cacheKey, {
-            timestamp: Date.now(),
-            data: resultMap[symbol]
-          });
-          return resultMap[symbol];
+        try {
+          const resultMap = await requestPromise;
+          
+          if (resultMap[symbol]) {
+            cache.set(cacheKey, {
+              timestamp: Date.now(),
+              data: resultMap[symbol]
+            });
+            return resultMap[symbol];
+          }
+        } catch (error) {
+          console.warn(`Error resolving pending request for ${symbol}`, error);
+          // Continuăm cu execuția pentru a încerca direct API-ul
         }
       }
     }
@@ -241,7 +370,7 @@ const getStockQuote = async (symbol) => {
             open: lastDataPoint.open,
             volume: lastDataPoint.volume,
             timestamp: lastDataPoint.date,
-            isSimulated: false
+            isSimulated: lastDataPoint.isSimulated || false
           };
           
           cache.set(cacheKey, {
@@ -252,7 +381,8 @@ const getStockQuote = async (symbol) => {
           return cryptoQuote;
         }
       } catch (error) {
-        console.log('Error while trying to get stock quote')
+        console.warn('Error fetching crypto data, will use simulated data', error);
+        // Continuăm cu execuția pentru a folosi date simulate
       }
     }
     
@@ -284,10 +414,12 @@ const getStockQuote = async (symbol) => {
           
           return quoteResult;
         } else {
+          console.log(`No data available for ${symbol}, using simulated data`);
           return generateFallbackData(symbol);
         }
       })
-      .catch(() => {
+      .catch(error => {
+        console.warn(`API error for ${symbol}, using simulated data`, error);
         return generateFallbackData(symbol);
       });
       
@@ -306,10 +438,16 @@ const getStockQuote = async (symbol) => {
         pendingRequests.delete(batchKey);
       }
     } else {
-      const result = await pendingRequests.get(batchKey);
-      return result || generateFallbackData(symbol);
+      try {
+        const result = await pendingRequests.get(batchKey);
+        return result || generateFallbackData(symbol);
+      } catch (error) {
+        console.warn(`Error with pending request for ${symbol}`, error);
+        return generateFallbackData(symbol);
+      }
     }
   } catch (error) {
+    console.warn(`Unexpected error getting quote for ${symbol}, using fallback`, error);
     return generateFallbackData(symbol);
   }
 };
@@ -349,9 +487,11 @@ const getMultipleStockQuotes = async (symbols) => {
               isSimulated: false
             };
           } else {
+            console.log(`No data available for ${symbol}, using simulated data`);
             quotesMap[symbol] = generateFallbackData(symbol);
           }
         } catch (error) {
+          console.warn(`API error for ${symbol}, using simulated data`, error);
           quotesMap[symbol] = generateFallbackData(symbol);
         }
       }
@@ -359,6 +499,7 @@ const getMultipleStockQuotes = async (symbols) => {
       return quotesMap;
     }, 'quote');
   } catch (error) {
+    console.warn('Error in getMultipleStockQuotes, using fallback for all symbols', error);
     const fallbackMap = {};
     symbols.forEach(symbol => {
       fallbackMap[symbol] = generateFallbackData(symbol);
@@ -367,7 +508,7 @@ const getMultipleStockQuotes = async (symbols) => {
   }
 };
 
-// Funcție pentru a obține date despre criptomonede
+// Funcție îmbunătățită pentru a obține date despre criptomonede
 const getCryptoData = async (symbol, from, to, intervalType = 'daily') => {
   try {
     // Formatare corectă a datelor (fără milisecunde și cu timezone explicit)
@@ -389,29 +530,30 @@ const getCryptoData = async (symbol, from, to, intervalType = 'daily') => {
         const response = await marketstackClient.get(`/intraday/${interval}`, {
           params: {
             symbols: marketstackSymbol,
-            date_from: fromDate.split('T')[0], // Trimite doar partea de date pentru 'date_from'
-            date_to: toDate.split('T')[0],     // Trimite doar partea de date pentru 'date_to'
+            date_from: fromDate.split('T')[0],
+            date_to: toDate.split('T')[0],
             limit: 1000
           }
         });
         
         if (!response.data?.data?.length) {
-          return generateSimulatedHistoricalData(symbol, fromDate, toDate);
+          console.log(`No crypto data from API for ${symbol}, using simulated data`);
+          return generateSimulatedHistoricalData(symbol, fromDate, toDate, intervalType);
         }
         
         return formatHistoricalData(response.data.data, symbol);
       } catch (apiError) {
-        console.error('Marketstack API error:', apiError.response?.data);
-        return generateSimulatedHistoricalData(symbol, fromDate, toDate);
+        console.warn('Marketstack API error for crypto data:', apiError.response?.data || apiError);
+        return generateSimulatedHistoricalData(symbol, fromDate, toDate, intervalType);
       }
     }, 'historical');
   } catch (error) {
-    console.error('Error in getCryptoData:', error);
-    return generateSimulatedHistoricalData(symbol, from, to);
+    console.warn('Error in getCryptoData, using simulated data', error);
+    return generateSimulatedHistoricalData(symbol, from, to, intervalType);
   }
 };
 
-// Funcție pentru obținerea datelor intraday
+// Funcție îmbunătățită pentru obținerea datelor intraday
 const getIntradayData = async (symbol, interval = '15min') => {
   try {
     const cacheKey = `intraday-${symbol}-${interval}`;
@@ -442,22 +584,25 @@ const getIntradayData = async (symbol, interval = '15min') => {
         });
         
         if (!response.data || !response.data.data || response.data.data.length === 0) {
-          return generateSimulatedHistoricalData(symbol, formattedStartDate, today.toISOString().split('T')[0]);
+          console.log(`No intraday data from API for ${symbol}, using simulated data`);
+          return generateSimulatedHistoricalData(symbol, formattedStartDate, today.toISOString().split('T')[0], interval);
         }
         
         return formatHistoricalData(response.data.data, symbol);
       } catch (apiError) {
+        console.warn('Marketstack API error for intraday data:', apiError.response?.data || apiError);
         const today = new Date();
         const startDate = new Date();
         startDate.setDate(today.getDate() - 2);
-        return generateSimulatedHistoricalData(symbol, startDate.toISOString().split('T')[0], today.toISOString().split('T')[0]);
+        return generateSimulatedHistoricalData(symbol, startDate.toISOString().split('T')[0], today.toISOString().split('T')[0], interval);
       }
     }, 'historical');
   } catch (error) {
+    console.warn('Error in getIntradayData, using simulated data', error);
     const today = new Date();
     const startDate = new Date();
     startDate.setDate(today.getDate() - 2);
-    return generateSimulatedHistoricalData(symbol, startDate.toISOString().split('T')[0], today.toISOString().split('T')[0]);
+    return generateSimulatedHistoricalData(symbol, startDate.toISOString().split('T')[0], today.toISOString().split('T')[0], interval);
   }
 };
 
@@ -467,6 +612,8 @@ const clearCache = () => {
   if (typeof window !== 'undefined' && window.localStorage) {
     localStorage.removeItem('marketstackApiCache');
   }
+  console.log('Cache cleared successfully');
+  return true;
 };
 
 // Obținerea statisticilor de cache
@@ -478,14 +625,16 @@ const getCacheStats = () => {
   };
 };
 
-// Exportăm toate funcțiile API
+// Exportăm toate funcțiile API și de generare pentru acces public
 const marketstackApi = {
   getStockQuote,
   getMultipleStockQuotes,
   getCryptoData,
   getIntradayData,
   clearCache,
-  getCacheStats
+  getCacheStats,
+  // Expunem și funcțiile de generare pentru acces direct
+  generateSimulatedHistoricalData,
 };
 
 export default marketstackApi;

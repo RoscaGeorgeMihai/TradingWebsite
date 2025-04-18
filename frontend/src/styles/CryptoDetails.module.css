@@ -239,6 +239,39 @@ body {
   flex-direction: column;
 }
 
+.buyButtonHeader,
+.sellButtonHeader {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.buyButtonHeader {
+  background-color: var(--positive);
+  color: white;
+}
+
+.buyButtonHeader:hover {
+  background-color: #00a844;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.sellButtonHeader {
+  background-color: var(--negative);
+  color: white;
+}
+
+.sellButtonHeader:hover {
+  background-color: #e03f3f;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
 .summaryItem .label {
   font-size: 14px;
   opacity: 0.7;
