@@ -64,11 +64,6 @@ function Navbar() {
             </a>
             <ul className={`${styles.dropdownMenu} ${dropdownOpen ? styles.active : ""}`}>
               <li>
-                <a href="/crypto" onClick={(e) => handleNavigation("/crypto", e)}>
-                  Crypto
-                </a>
-              </li>
-              <li>
                 <a href="/stocks" onClick={(e) => handleNavigation("/stocks", e)}>
                   Stocks
                 </a>

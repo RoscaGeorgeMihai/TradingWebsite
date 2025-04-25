@@ -9,16 +9,19 @@
    :root {
     --primary-color: #1a2634;
     --secondary-color: #0dcaf0;
-    --bg-primary: #0a1218;
-    --bg-secondary: #1a2634;
-    --bg-hover: #14375e;
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.7);
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-hover: #e9ecef;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
     --success-color: #00c853;
     --danger-color: #ff5252;
-    --border-color: rgba(255, 255, 255, 0.1);
+    --border-color: #dee2e6;
     --border-radius: 8px;
     --card-max-height: 350px; /* Adăugat pentru înălțimea maximă a cardurilor */
+    --dark-bg: #1a2634; /* Același cu primary-color pentru consistență */
+  --text-color: #212529; /* Același cu text-primary pentru consistență */
+  --red: #ff5252;
   }
   
   /* ------------------------------------------------------
@@ -270,45 +273,104 @@
   /* 6.3 Tabele */
   .table {
     width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 10px 0;
   }
     
   .th, .td {
-    padding: 10px;
+    padding: 15px;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
   }
     
   .th {
     font-weight: 600;
     color: var(--secondary-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--bg-secondary);
+    border-bottom: 2px solid var(--secondary-color);
   }
     
   tr:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--bg-hover);
+    transition: background-color 0.2s ease;
   }
     
   tr:last-child .td {
     border-bottom: none;
   }
   
-  /* Iconițe pentru active */
+  /* Asset List specific styles */
+  .assetsTable {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    margin-top: 10px;
+  }
+  
+  .assetsTable .td {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  
   .assetIcon {
-    width: 2rem;
-    height: 2rem;
+    width: 2.5rem;
+    height: 2.5rem;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 0.5rem;
+    margin-right: 1rem;
     font-weight: 600;
     color: white;
+    font-size: 1rem;
   }
-    
+  
+  /* Transactions specific styles */
+  .transactionsTable {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    margin-top: 10px;
+  }
+  
+  .transactionsTable .td {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  
+  /* Add spacing between rows */
+  .table tr {
+    height: 60px;
+  }
+  
+  /* Make the table more responsive */
+  @media (max-width: 767px) {
+    .th, .td {
+      padding: 12px 8px;
+      font-size: 14px;
+    }
+  
+    .table tr {
+      height: 50px;
+    }
+  
+    .assetIcon {
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.875rem;
+      margin-right: 0.75rem;
+    }
+  }
+  
+  /* Iconițe pentru active */
   .assetSymbol {
     font-weight: 500;
   }
@@ -342,11 +404,6 @@
   .transactionsCard {
     margin-bottom: 20px;
   }
-    
-  .transactionsTable {
-    max-height: 300px;
-    overflow-y: auto;
-  }
   
   /* 6.5 Grafice și vizualizări de date */
   /* Pie Chart */
@@ -365,18 +422,20 @@
     align-items: center;
     width: 100%;
     height: 220px;
-    margin: 0;
+    margin: 20px 0;
     position: relative;
     overflow: visible;
   }
-    
+  
+  /* Eliminăm border-ul problematic de pe .pieChart */
   .pieChart {
     width: 160px;
     height: 160px;
     border-radius: 50%;
     position: relative;
-    background-color: transparent;
-    /* Înlătură orice stil care ar putea interfera cu stilurile inline */
+    /* Eliminat border: 2px solid var(--border-color); */
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
     
   .legend {
@@ -402,14 +461,18 @@
   
   /* 6.6 Bare de progres */
   .progressContainer {
-    margin-bottom: 15px;
+    margin-bottom: 1.5rem;
+  }
+    
+  .progressContainer:last-child {
+    margin-bottom: 0;
   }
     
   .progressLabel {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 5px;
-    font-size: 14px;
+    align-items: center;
+    margin-bottom: 0.5rem;
   }
     
   .progressBar {
@@ -509,18 +572,6 @@
   /* ------------------------------------------------------
      8. Ajustări responsive
      ------------------------------------------------------ */
-  /* Stiluri speciale pentru tabelul de active */
-  .assetsTable {
-    max-height: 350px;
-    overflow-y: auto;
-  }
-  
-  /* Stiluri speciale pentru alocarea activelor */
-  .allocationChart {
-    max-height: none;
-    overflow: visible !important;
-  }
-  
   /* Filtere pentru card-uri */
   .filterButtons {
     display: flex;
@@ -654,4 +705,15 @@
     .portfolioSummary {
       padding: 15px;
     }
+  }
+
+  /* Performance Component Styles */
+  .performanceDetails {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .performanceDetails span {
+    font-size: 0.9rem;
   }

@@ -1,24 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../styles/News.module.css'; // Using a separate CSS module
 
+const FINNHUB_API_KEY = 'cvtcg9hr01qhup0vkq3gcvtcg9hr01qhup0vkq40'; // Replace with your actual API key
+
 const News = () => {
   // State for news data and filtering
-  const [activeCategory, setActiveCategory] = useState('all');
   const [newsData, setNewsData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [featuredNews, setFeaturedNews] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const newsPerPage = 6;
-
-  // Categories for filtering
-  const categories = [
-    { id: 'all', name: 'All Markets' },
-    { id: 'crypto', name: 'Cryptocurrency' },
-    { id: 'stocks', name: 'Stocks' },
-    { id: 'commodities', name: 'Commodities' },
-    { id: 'forex', name: 'Forex' }
-  ];
 
   // Time filters for recency
   const timeFilters = [
@@ -30,179 +22,51 @@ const News = () => {
 
   const [activeTimeFilter, setActiveTimeFilter] = useState('all');
 
-  // Simulating news data loading
   useEffect(() => {
-    setTimeout(() => {
-      const mockNewsData = [
-        // Crypto news
-        {
-          id: 1,
-          title: 'Bitcoin Soars Past $100,000 in Historic Rally',
-          date: 'April 7, 2025',
-          source: 'CryptoInsider',
-          category: 'crypto',
-          image: '/api/placeholder/800/450',
-          snippet: 'Bitcoin has reached a new all-time high, breaking $100,000 for the first time as institutional adoption continues to grow.',
-          url: '#',
-          featured: true,
-          relatedAssets: ['BTC', 'ETH']
-        },
-        {
-          id: 2,
-          title: 'Ethereum 3.0 Launch Date Confirmed for June',
-          date: 'April 6, 2025',
-          source: 'BlockchainReporter',
-          category: 'crypto',
-          image: '/api/placeholder/800/450',
-          snippet: 'Ethereum developers have confirmed that the highly anticipated 3.0 upgrade will launch in June, promising significant improvements in scalability and energy efficiency.',
-          url: '#',
-          featured: false,
-          relatedAssets: ['ETH']
-        },
-        {
-          id: 3,
-          title: 'Major Bank Announces Crypto Custody Services for Institutional Clients',
-          date: 'April 5, 2025',
-          source: 'FinanceDaily',
-          category: 'crypto',
-          image: '/api/placeholder/800/450',
-          snippet: 'One of the world\'s largest banks has announced it will begin offering cryptocurrency custody services to institutional clients, marking another milestone for mainstream crypto adoption.',
-          url: '#',
-          featured: false,
-          relatedAssets: ['BTC', 'ETH', 'XRP']
-        },
+    const fetchNews = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          `https://finnhub.io/api/v1/news?category=general&token=${FINNHUB_API_KEY}`
+        );
         
-        // Stock news
-        {
-          id: 4,
-          title: 'Tech Giant Exceeds Earnings Expectations by 30%',
-          date: 'April 7, 2025',
-          source: 'MarketWatch',
-          category: 'stocks',
-          image: '/api/placeholder/800/450',
-          snippet: 'The leading tech company has reported quarterly earnings that surpassed Wall Street expectations by 30%, driven by strong growth in cloud services and AI solutions.',
-          url: '#',
-          featured: true,
-          relatedAssets: ['TECH', 'AI']
-        },
-        {
-          id: 5,
-          title: 'Healthcare Stocks Rally Following New Medical Breakthrough',
-          date: 'April 6, 2025',
-          source: 'StockAnalyst',
-          category: 'stocks',
-          image: '/api/placeholder/800/450',
-          snippet: 'Healthcare stocks are seeing significant gains after a major pharmaceutical company announced a breakthrough in cancer treatment technology.',
-          url: '#',
-          featured: false,
-          relatedAssets: ['PHRM', 'MEDX']
-        },
-        {
-          id: 6,
-          title: 'Electric Vehicle Manufacturer Expands into Asian Markets',
-          date: 'April 5, 2025',
-          source: 'AutoIndustryNews',
-          category: 'stocks',
-          image: '/api/placeholder/800/450',
-          snippet: 'A leading electric vehicle company has announced plans to expand manufacturing capabilities in Asian markets, potentially increasing global production by 40%.',
-          url: '#',
-          featured: false,
-          relatedAssets: ['EV1', 'AUTO']
-        },
-        
-        // Commodities news
-        {
-          id: 7,
-          title: 'Gold Prices Surge as Global Uncertainties Rise',
-          date: 'April 7, 2025',
-          source: 'CommodityNews',
-          category: 'commodities',
-          image: '/api/placeholder/800/450',
-          snippet: 'Gold hit new highs this month as investors seek safe havens amid economic uncertainty and inflation concerns.',
-          url: '#',
-          featured: true,
-          relatedAssets: ['GOLD', 'SILVER']
-        },
-        {
-          id: 8,
-          title: 'Oil Prices Decline as Inventory Levels Build',
-          date: 'April 6, 2025',
-          source: 'EnergyNews',
-          category: 'commodities',
-          image: '/api/placeholder/800/450',
-          snippet: 'Crude oil prices fell as U.S. stockpiles increased beyond analyst expectations.',
-          url: '#',
-          featured: false,
-          relatedAssets: ['OIL', 'NG']
-        },
-        {
-          id: 9,
-          title: 'Agricultural Commodities Face Pressure from Changing Climate Patterns',
-          date: 'April 5, 2025',
-          source: 'AgricultureDaily',
-          category: 'commodities',
-          image: '/api/placeholder/800/450',
-          snippet: 'Corn and wheat futures are experiencing volatility as farmers deal with unpredictable weather patterns across major growing regions.',
-          url: '#',
-          featured: false,
-          relatedAssets: ['CORN', 'WHEAT']
-        },
-        
-        // Forex news
-        {
-          id: 10,
-          title: 'Dollar Strengthens Against Major Currencies Following Fed Announcement',
-          date: 'April 7, 2025',
-          source: 'ForexTrader',
-          category: 'forex',
-          image: '/api/placeholder/800/450',
-          snippet: 'The U.S. dollar gained strength against major currencies after the Federal Reserve signaled potential interest rate adjustments.',
-          url: '#',
-          featured: true,
-          relatedAssets: ['USD', 'EUR']
-        },
-        {
-          id: 11,
-          title: 'Euro Weakens Amid European Economic Growth Concerns',
-          date: 'April 6, 2025',
-          source: 'EuropeanFinance',
-          category: 'forex',
-          image: '/api/placeholder/800/450',
-          snippet: 'The euro has declined against multiple currencies as recent economic data from the eurozone raises concerns about growth prospects.',
-          url: '#',
-          featured: false,
-          relatedAssets: ['EUR', 'GBP']
-        },
-        {
-          id: 12,
-          title: 'Japanese Yen Shows Resilience Despite Economic Headwinds',
-          date: 'April 5, 2025',
-          source: 'AsianMarkets',
-          category: 'forex',
-          image: '/api/placeholder/800/450',
-          snippet: 'The Japanese yen has maintained stability against major trading partners despite ongoing economic challenges in the region.',
-          url: '#',
-          featured: false,
-          relatedAssets: ['JPY', 'USD']
+        if (!response.ok) {
+          throw new Error('Failed to fetch news');
         }
-      ];
 
-      // Set featured news
-      const featured = mockNewsData.filter(item => item.featured);
-      setFeaturedNews(featured[0]);
+        const data = await response.json();
+        
+        // Transform Finnhub data to match our UI structure
+        const transformedNews = data.map((item, index) => ({
+          id: index,
+          title: item.headline,
+          date: new Date(item.datetime * 1000).toLocaleDateString(),
+          source: item.source,
+          image: item.image || '/api/placeholder/800/450',
+          snippet: item.summary,
+          url: item.url,
+          featured: index === 0, // First news item is featured
+          relatedAssets: item.related || []
+        }));
 
-      // Set all news
-      setNewsData(mockNewsData);
-      setIsLoading(false);
-    }, 800);
+        setNewsData(transformedNews);
+        setFeaturedNews(transformedNews[0]);
+      } catch (error) {
+        console.error('Error fetching news:', error);
+        setNewsData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchNews();
   }, []);
 
-  // Filter news based on active category and search query
+  // Filter news based on search query
   const filteredNews = newsData.filter(news => {
-    const matchesCategory = activeCategory === 'all' || news.category === activeCategory;
     const matchesSearch = news.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           news.snippet.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesSearch;
   });
 
   // Pagination
@@ -218,15 +82,15 @@ const News = () => {
   };
 
   if (isLoading) {
-    return <div className={styles.loadingContainer}>Loading latest news...</div>;
+    return <div className={styles.loadingContainer}>Loading latest stock news...</div>;
   }
 
   return (
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.pageHeader}>
-        <h1>Market News</h1>
-        <p>Stay up to date with the latest developments across all financial markets</p>
+        <h1>Stock Market News</h1>
+        <p>Stay up to date with the latest developments in the stock market</p>
       </div>
 
       {/* Search bar */}
@@ -234,7 +98,7 @@ const News = () => {
         <input
           type="text"
           className={styles.searchInput}
-          placeholder="Search news..."
+          placeholder="Search stock news..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -243,19 +107,8 @@ const News = () => {
         </button>
       </div>
 
-      {/* Category filters */}
+      {/* Time filters */}
       <div className={styles.filtersContainer}>
-        <div className={styles.categoryFilters}>
-          {categories.map(category => (
-            <button 
-              key={category.id}
-              className={`${styles.filterBtn} ${activeCategory === category.id ? styles.active : ''}`}
-              onClick={() => setActiveCategory(category.id)}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
         <div className={styles.timeFilters}>
           {timeFilters.map(filter => (
             <button 
@@ -269,11 +122,11 @@ const News = () => {
         </div>
       </div>
 
-      {/* Featured news section - shown only on "all" category */}
-      {activeCategory === 'all' && featuredNews && (
+      {/* Featured news section */}
+      {featuredNews && (
         <div className={styles.featuredNews}>
           <div className={styles.featuredContent}>
-            <span className={styles.featuredLabel}>Featured Story</span>
+            <span className={styles.featuredLabel}>Featured Stock Story</span>
             <h2>{featuredNews.title}</h2>
             <p className={styles.newsMeta}>{featuredNews.source} • {featuredNews.date}</p>
             <p className={styles.newsSnippet}>{featuredNews.snippet}</p>
@@ -297,7 +150,7 @@ const News = () => {
             <div key={news.id} className={styles.newsCard}>
               <div className={styles.newsImageContainer}>
                 <img src={news.image} alt={news.title} className={styles.newsImage} />
-                <span className={styles.categoryBadge}>{categories.find(cat => cat.id === news.category).name}</span>
+                <span className={styles.categoryBadge}>Stocks</span>
               </div>
               <div className={styles.newsContent}>
                 <h3>{news.title}</h3>
@@ -316,7 +169,7 @@ const News = () => {
           ))
         ) : (
           <div className={styles.noResults}>
-            <p>No news found matching your criteria. Try adjusting your filters.</p>
+            <p>No stock news found matching your criteria. Try adjusting your search.</p>
           </div>
         )}
       </div>
@@ -355,8 +208,8 @@ const News = () => {
       {/* Newsletter subscription */}
       <div className={styles.newsletterContainer}>
         <div className={styles.newsletterContent}>
-          <h2>Stay Ahead of the Market</h2>
-          <p>Subscribe to our newsletter and receive daily market updates directly to your inbox.</p>
+          <h2>Stay Ahead of the Stock Market</h2>
+          <p>Subscribe to our newsletter and receive daily stock market updates directly to your inbox.</p>
           <div className={styles.subscribeForm}>
             <input type="email" placeholder="Your email address" className={styles.emailInput} />
             <button className={styles.subscribeBtn}>Subscribe</button>

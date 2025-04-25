@@ -1073,3 +1073,90 @@ th {
     flex: 1;
   }
 }
+
+.companyAddress {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: var(--card-background);
+  border-radius: 8px;
+}
+
+.companyAddress h3 {
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.companyExecutives {
+  margin: 20px 0;
+}
+
+.companyExecutives h3 {
+  margin-bottom: 15px;
+  color: var(--text-primary);
+}
+
+.executivesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.executiveCard {
+  background-color: var(--card-background);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.executiveCard h4 {
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+}
+
+.executiveCard p {
+  margin: 5px 0;
+  color: var(--text-secondary);
+}
+
+.stockExchanges {
+  margin: 20px 0;
+}
+
+.stockExchanges h3 {
+  margin-bottom: 15px;
+  color: var(--text-primary);
+}
+
+.exchangesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.exchangeCard {
+  background-color: var(--card-background);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.exchangeCard h4 {
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+}
+
+.exchangeCard p {
+  margin: 5px 0;
+  color: var(--text-secondary);
+}
+
+.exchangeCard a {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.exchangeCard a:hover {
+  text-decoration: underline;
+}

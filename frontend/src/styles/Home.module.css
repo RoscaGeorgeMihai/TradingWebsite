@@ -143,6 +143,22 @@
     text-align: center;
   }
 
+  .phoneSection {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    position: relative;
+    z-index: 2; /* Un z-index mai mare decât backgroundul */
+    background-color: transparent; /* Faceți fundalul secțiunii transparent */
+    margin-bottom: 2rem;
+  }
+  
+  .phoneText {
+    flex: 1;
+    padding-left: 2rem;
+  }
+
   .usersText {
     font-size: 2rem;
     text-align: center;

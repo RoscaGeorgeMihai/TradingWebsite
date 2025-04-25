@@ -15,14 +15,14 @@ module.exports = function(app) {
   app.use(
     '/marketstack',  // Toate cererile care încep cu /marketstack
     createProxyMiddleware({
-      target: 'http://api.marketstack.com/v1',
+      target: 'http://api.marketstack.com/v2',
       changeOrigin: true,
       pathRewrite: {
         '^/marketstack': '', // Elimină prefixul /marketstack din URL
       },
       onProxyReq: (proxyReq) => {
         // Adaugă cheia API la toate cererile către Marketstack
-        proxyReq.path += `${proxyReq.path.includes('?') ? '&' : '?'}access_key=7061353b999b62191f389d3f89e618e6`;
+        proxyReq.path += `${proxyReq.path.includes('?') ? '&' : '?'}access_key=809465cd231141db8a09832ee9946255`;
       },
       headers: {
         // Poți adăuga headere suplimentare dacă este necesar

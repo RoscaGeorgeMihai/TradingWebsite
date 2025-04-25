@@ -98,6 +98,15 @@
     color: var(--secondary-color);
     border-left: 3px solid var(--secondary-color);
   }
+
+  .sidebarItem.backButton {
+    background-color: rgba(13, 202, 240, 0.1);
+    color: var(--secondary-color);
+  }
+  
+  .sidebarItem.backButton:hover {
+    background-color: rgba(13, 202, 240, 0.2);
+  }
   
   .sidebarIcon {
     margin-right: 12px;
@@ -109,6 +118,9 @@
   }
   
   .sidebarFooter {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
     padding: 15px 0;
     border-top: 1px solid var(--border-color);
   }
@@ -917,6 +929,10 @@
     
     .quickActions {
       grid-template-columns: 1fr;
+    }
+    .sidebarFooter {
+      flex-direction: row;
+      justify-content: space-around;
     }
   }
   

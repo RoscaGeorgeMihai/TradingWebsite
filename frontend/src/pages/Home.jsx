@@ -2,6 +2,7 @@ import React from "react";
 import styles from "../styles/Home.module.css";
 import CryptoDashboard from "../components/CryptoDashboard.jsx";
 import usersImage from "../assets/users.png";
+import PhoneWithChart from "../components/Phone.jsx";
 
 const HomePage = () => {
   const cryptocurrencies = [
@@ -26,23 +27,20 @@ const HomePage = () => {
     { id: 3, title: 'Delaware Court Grants Temporary Relief in Bitcoin Mining Dispute' },
     { id: 4, title: 'Crypto News: Binance to Support Ronin (RONIN) Network Upgrade & Hard Fork on March 17, 2025' }
   ];
-
+  
   return (
     <div className={styles.homepage}>
       <div className={styles.backgroundImage}></div>
       
       <div className={styles.container}>
-        <div className={styles.infoSection}>
-          <img src={usersImage} alt="Users" className={styles.usersImage}/>
-          <h1 className={styles.usersText}>
-            Over <span className={styles.accent}>2.5 Million</span> Users Trust Our Platform
-          </h1>
+        <div className={styles.phoneSection}>
+          <PhoneWithChart />
         </div>
         
-        <CryptoDashboard 
-          cryptocurrencies={cryptocurrencies} 
-          newListings={newListings} 
-          news={news} 
+        <CryptoDashboard
+          cryptocurrencies={cryptocurrencies}
+          newListings={newListings}
+          news={news}
         />
       </div>
     </div>

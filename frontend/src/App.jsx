@@ -4,16 +4,14 @@ import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import SignUp from './pages/Signup';
-import Crypto from './pages/Crypto';
 import Invest from './pages/Invest';
 import Stocks from './pages/Stocks';
-import Commodities from './pages/Commodities';
 import News from './pages/News';
 import StockDetails from './pages/StockDetails';
-import CryptoDetails from './pages/CryptoDetails';
-import CommoditiesDetails from './pages/CommoditiesDetails';
 import Portfolio from './pages/Portfolio';
 import AdminPage from './pages/AdminPage';
+import BuyStock from './pages/BuyStock';
+import SellStock from './pages/SellStock';
 import { AuthProvider } from './components/AuthContext';
 import { InvestProvider } from './components/InvestContext';
 import PrivateRoute from './components/PrivateRoute';
@@ -40,9 +38,7 @@ function AppContent() {
               </PrivateRoute>
             } 
           />
-          <Route path="/crypto" element={<Crypto />} />
           <Route path="/stocks" element={<Stocks />} />
-          <Route path="/commodities" element={<Commodities />} />
           <Route 
             path="/portfolio" 
             element={
@@ -53,8 +49,22 @@ function AppContent() {
           />
           <Route path="/news" element={<News />} />
           <Route path="/stocks/:symbol" element={<StockDetails />} />
-          <Route path="/crypto/:symbol" element={<CryptoDetails />} />
-          <Route path="/commodities/:symbol" element={<CommoditiesDetails />} />
+          <Route 
+            path="/buy/:symbol" 
+            element={
+              <PrivateRoute>
+                <BuyStock />
+              </PrivateRoute>
+            } 
+          />
+          <Route 
+            path="/sell/:symbol" 
+            element={
+              <PrivateRoute>
+                <SellStock />
+              </PrivateRoute>
+            } 
+          />
           
           {/* Admin Route */}
           <Route
