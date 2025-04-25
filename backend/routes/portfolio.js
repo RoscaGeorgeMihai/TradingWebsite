@@ -1,12 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const portfolioController = require('../controllers/portfolioController');
 
 // @route   GET /api/portfolio
 // @desc    Get user's portfolio data
 // @access  Private
 router.get('/', auth, portfolioController.getPortfolio);
+
+// @route   GET /api/portfolio/history
+// @desc    Get user's portfolio history
+// @access  Private
+router.get('/history', auth, portfolioController.getPortfolioHistory);
+
+// @route   POST /api/portfolio/buy
+// @desc    Buy stocks and add to portfolio
+// @access  Private
+router.post('/buy', auth, portfolioController.buyStock);
 
 // @route   POST /api/portfolio/assets
 // @desc    Add a new asset to portfolio
@@ -39,8 +49,18 @@ router.put('/alerts/:alertId', auth, portfolioController.markAlertRead);
 router.post('/funds', auth, portfolioController.updateFunds);
 
 // @route   POST /api/portfolio/update-price
-// @desc    Update asset price (could be admin only)
+// @desc    Update asset price
 // @access  Private
 router.post('/update-price', auth, portfolioController.updateAssetPrice);
+
+// @route   POST /api/portfolio/save-current-value
+// @desc    Save the current portfolio value
+// @access  Private
+router.post('/save-current-value', auth, portfolioController.saveCurrentPortfolioValue);
+
+// @route   POST /api/portfolio/calculate-performance
+// @desc    Calculate portfolio performance based on current values
+// @access  Private
+router.post('/calculate-performance', auth, portfolioController.calculatePerformance);
 
 module.exports = router;

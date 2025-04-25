@@ -32,7 +32,14 @@ const PortfolioAssetSchema = new mongoose.Schema({
     color: {
         type: String,
         default: function() {
-            // Generate a random color if none is provided
+            // Use specific colors for certain symbols
+            if (this.symbol === 'AMZN') {
+                return '#FF9900'; // Amazon's brand orange color
+            }
+            if (this.symbol === 'MSFT') {
+                return '#00A4EF'; // Microsoft's blue color
+            }
+            // Generate a random color for other symbols
             return '#' + Math.floor(Math.random()*16777215).toString(16);
         }
     },
@@ -46,7 +53,8 @@ const PortfolioAssetSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// Index for faster lookups
+// Add indexes for better performance
 PortfolioAssetSchema.index({ userId: 1, symbol: 1 }, { unique: true });
+PortfolioAssetSchema.index({ symbol: 1 });
 
 module.exports = mongoose.model('PortfolioAsset', PortfolioAssetSchema);

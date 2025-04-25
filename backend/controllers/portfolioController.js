@@ -1,53 +1,121 @@
 const Users = require('../models/Users');
 const PortfolioAsset = require('../models/PortfolioAsset');
 const PortfolioTransaction = require('../models/PortfolioTransaction');
+const PortfolioHistory = require('../models/PortfolioHistory');
 const Alert = require('../models/Alert');
 const mongoose = require('mongoose');
+const axios = require('axios');
+const marketstackApi = require('../services/marketstackApi');
 
-// Get the entire portfolio data
+const calculatePerformance = (currentValue, previousValue) => {
+    if (!previousValue || previousValue === 0) return 0;
+    const performance = ((currentValue - previousValue) / previousValue) * 100;
+    return Math.round(performance * 100) / 100;
+};
+
+const savePortfolioHistory = async (userId, assets, totalValue, investedAmount) => {
+    try {
+        const now = new Date();
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+        
+        const safeTotalValue = parseFloat(totalValue) || 0;
+        const safeInvestedAmount = parseFloat(investedAmount) || 0;
+        
+        // Calculate the overall performance
+        const calculateChange = (current, previous) => {
+            if (!previous || previous === 0) return 0;
+            const change = ((current - previous) / previous) * 100;
+            return Math.round(change * 100) / 100;
+        };
+        
+        // Calculate overall performance based on total value vs invested amount
+        const overallPerformance = calculateChange(safeTotalValue, safeInvestedAmount);
+        
+        // Use overall performance for all periods
+        const performance = {
+            daily: overallPerformance,
+            weekly: overallPerformance,
+            monthly: overallPerformance,
+            yearly: overallPerformance,
+            overall: overallPerformance
+        };
+            
+        const formattedAssets = assets.map(asset => ({
+            symbol: asset.symbol,
+            name: asset.name,
+            price: parseFloat(asset.price) || 0,
+            quantity: parseFloat(asset.quantity) || 0,
+            value: (parseFloat(asset.price) || 0) * (parseFloat(asset.quantity) || 0),
+            changePercent: parseFloat(asset.changePercent) || 0
+        }));
+        
+        // Find today's snapshot if it exists
+        const lastSnapshot = await PortfolioHistory.findOne({ 
+            userId,
+            date: {
+                $gte: today,
+                $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+            }
+        });
+        
+        if (lastSnapshot) {
+            lastSnapshot.totalValue = safeTotalValue;
+            lastSnapshot.investedAmount = safeInvestedAmount;
+            lastSnapshot.assets = formattedAssets;
+            lastSnapshot.performance = performance;
+            await lastSnapshot.save();
+        } else {
+            await PortfolioHistory.create({
+                userId,
+                date: now,
+                totalValue: safeTotalValue,
+                investedAmount: safeInvestedAmount,
+                assets: formattedAssets,
+                performance
+            });
+        }
+
+        return performance;
+    } catch (error) {
+        console.error('Error saving portfolio history:', error);
+        throw error;
+    }
+};
+
 exports.getPortfolio = async (req, res) => {
     try {
-        // Get the user
         const user = await Users.findById(req.user.id).select('-password');
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Get user's portfolio assets
         const assets = await PortfolioAsset.find({ userId: req.user.id });
         
-        // Calculate total value and allocations
         let totalValue = assets.reduce((sum, asset) => sum + (asset.price * asset.quantity), 0);
         
-        // If no assets yet, use the user's investedAmount
         if (totalValue === 0) {
             totalValue = user.investedAmount || 0;
         }
 
-        // Get recent transactions
+        const performance = await savePortfolioHistory(
+            req.user.id,
+            assets,
+            totalValue,
+            user.investedAmount || 0
+        );
+
         const transactions = await PortfolioTransaction.find({ userId: req.user.id })
             .sort({ date: -1 })
             .limit(10);
 
-        // Get user alerts
         const alerts = await Alert.find({ userId: req.user.id })
             .sort({ createdAt: -1 })
             .limit(10);
 
-        // Calculate daily change (could be done more accurately with historical data)
-        const dailyChange = assets.length > 0 ? 
-            assets.reduce((sum, asset) => sum + asset.changePercent, 0) / assets.length : 0;
-
-        // Calculate allocations and format assets
         const formattedAssets = assets.map(asset => {
             const value = asset.price * asset.quantity;
             const allocation = totalValue > 0 ? Math.round((value / totalValue) * 100) : 0;
-            
-            // Update allocation in DB if it has changed
-            if (allocation !== asset.allocation) {
-                asset.allocation = allocation;
-                asset.save();
-            }
             
             return {
                 symbol: asset.symbol,
@@ -55,24 +123,27 @@ exports.getPortfolio = async (req, res) => {
                 price: asset.price,
                 quantity: asset.quantity,
                 value: value,
-                changePercent: asset.changePercent,
+                changePercent: asset.changePercent || 0,
                 allocation: allocation,
-                color: asset.color
+                color: asset.color || '#' + Math.floor(Math.random()*16777215).toString(16)
             };
         });
 
-        // Format transactions
-        const formattedTransactions = transactions.map(tx => ({
-            id: tx._id,
-            date: tx.date.toISOString().split('T')[0],
-            type: tx.type === 'buy' ? 'Cumpărare' : 'Vânzare',
-            symbol: tx.symbol,
-            quantity: tx.quantity,
-            price: tx.price,
-            total: tx.price * tx.quantity
-        }));
+        const formattedTransactions = transactions.map(tx => {
+            const txDate = new Date(tx.date);
+            const transactionType = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
+            
+            return {
+                id: tx._id,
+                date: txDate.toISOString().split('T')[0],
+                type: transactionType,
+                symbol: tx.symbol,
+                quantity: tx.quantity,
+                price: tx.price,
+                total: tx.price * tx.quantity
+            };
+        });
 
-        // Format alerts
         const formattedAlerts = alerts.map(alert => {
             const createdAt = new Date(alert.createdAt);
             const now = new Date();
@@ -82,134 +153,178 @@ exports.getPortfolio = async (req, res) => {
                 id: alert._id,
                 message: alert.message,
                 type: alert.type,
-                time: `Acum ${diffHours} ore`
+                time: `${diffHours} hours ago`
             };
         });
 
-        // Create performance data based on actual user data
-        // In a real application, this would come from historical price data
-        const performance = [
-            { label: 'Astăzi', value: dailyChange },
-            { label: 'Săptămâna aceasta', value: 0 },
-            { label: 'Luna aceasta', value: 0 },
-            { label: 'Anual', value: 0 },
-            { label: 'Total', value: 0 }
-        ];
-
-        // Return the complete portfolio data
         res.json({
-            totalValue: totalValue,
-            dailyChange: dailyChange,
+            totalValue,
+            investedAmount: user.investedAmount || 0,
             assets: formattedAssets,
+            performance,
             transactions: formattedTransactions,
             alerts: formattedAlerts,
-            performance: performance,
-            otherAssets: [] // Empty array instead of hardcoded data
+            otherAssets: [],
+            dailyChange: performance.daily || 0
         });
-
     } catch (err) {
         console.error('Error in getPortfolio:', err.message);
         res.status(500).send('Server error');
     }
 };
 
-// Add a new asset to the portfolio
+exports.saveCurrentPortfolioValue = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        const assets = await PortfolioAsset.find({ userId });
+        
+        let totalValue = assets.reduce((sum, asset) => sum + (asset.price * asset.quantity), 0);
+        
+        const user = await Users.findById(userId);
+        const investedAmount = user.investedAmount || 0;
+        
+        const performance = await savePortfolioHistory(
+            userId,
+            assets,
+            totalValue,
+            investedAmount
+        );
+        
+        res.json({
+            message: 'Portfolio value saved successfully',
+            totalValue,
+            performance
+        });
+    } catch (err) {
+        console.error('Error saving portfolio value:', err);
+        res.status(500).send('Server error');
+    }
+};
+
+exports.updateAssetPrice = async (req, res) => {
+    try {
+        const { symbol, price, changePercent } = req.body;
+        
+        if (!symbol || !price) {
+            return res.status(400).json({ message: 'Please provide symbol and price' });
+        }
+        
+        const assets = await PortfolioAsset.find({ symbol: symbol.toUpperCase() });
+        
+        if (assets.length === 0) {
+            return res.status(404).json({ message: 'No assets found with this symbol' });
+        }
+        
+        for (const asset of assets) {
+            asset.price = parseFloat(price);
+            if (changePercent !== undefined) {
+                asset.changePercent = parseFloat(changePercent);
+            }
+            asset.lastUpdated = new Date();
+            await asset.save();
+            
+            const user = await Users.findById(asset.userId);
+            const userAssets = await PortfolioAsset.find({ userId: asset.userId });
+            const totalValue = userAssets.reduce((sum, a) => sum + (a.price * a.quantity), 0);
+            
+            await savePortfolioHistory(
+                asset.userId,
+                userAssets,
+                totalValue,
+                user.investedAmount || 0
+            );
+        }
+        
+        res.json({ message: `${assets.length} assets updated successfully` });
+    } catch (err) {
+        console.error('Error in updateAssetPrice:', err.message);
+        res.status(500).send('Server error');
+    }
+};
+
 exports.addAsset = async (req, res) => {
     try {
         const { symbol, name, price, quantity, color } = req.body;
 
-        // Validate inputs
-        if (!symbol || !name || !price || !quantity) {
+        if (!symbol || !price || !quantity) {
             return res.status(400).json({ message: 'Please provide all required fields' });
         }
 
-        // Check if asset already exists for this user
+        const assetName = name || symbol;
+
         const existingAsset = await PortfolioAsset.findOne({ 
             userId: req.user.id,
             symbol: symbol
         });
 
         if (existingAsset) {
-            // Update existing asset
             existingAsset.quantity += parseFloat(quantity);
-            existingAsset.price = parseFloat(price); // Update to latest price
+            existingAsset.price = parseFloat(price);
+            existingAsset.name = assetName;
             
-            // If color is provided, update it
             if (color) {
                 existingAsset.color = color;
             }
             
             await existingAsset.save();
 
-            // Create transaction record
             await PortfolioTransaction.create({
                 userId: req.user.id,
                 type: 'buy',
                 symbol,
                 quantity: parseFloat(quantity),
                 price: parseFloat(price),
-                date: new Date()
+                name: assetName
             });
 
-            return res.json(existingAsset);
+            return res.json({ message: 'Asset updated successfully', asset: existingAsset });
         }
 
-        // Create new asset
-        const newAsset = new PortfolioAsset({
+        const newAsset = await PortfolioAsset.create({
             userId: req.user.id,
             symbol,
-            name,
+            name: assetName,
             price: parseFloat(price),
             quantity: parseFloat(quantity),
-            changePercent: 0,
             color: color || '#' + Math.floor(Math.random()*16777215).toString(16)
         });
 
-        await newAsset.save();
-
-        // Create transaction record
         await PortfolioTransaction.create({
             userId: req.user.id,
             type: 'buy',
             symbol,
             quantity: parseFloat(quantity),
             price: parseFloat(price),
-            date: new Date()
+            name: assetName
         });
 
-        // Create alert for new asset purchase
-        await Alert.create({
-            userId: req.user.id,
-            message: `Achiziție nouă: ${quantity} ${symbol} la $${price}`,
-            type: 'success'
-        });
-
-        // Update user's invested amount
         const user = await Users.findById(req.user.id);
-        if (user) {
-            user.investedAmount += parseFloat(price) * parseFloat(quantity);
-            user.availableFunds -= parseFloat(price) * parseFloat(quantity);
-            await user.save();
-        }
+        const assets = await PortfolioAsset.find({ userId: req.user.id });
+        const totalValue = assets.reduce((sum, asset) => sum + (asset.price * asset.quantity), 0);
+        
+        await savePortfolioHistory(
+            req.user.id,
+            assets,
+            totalValue,
+            user.investedAmount || 0
+        );
 
-        res.json(newAsset);
+        res.json({ message: 'Asset added successfully', asset: newAsset });
     } catch (err) {
-        console.error('Error in addAsset:', err.message);
-        res.status(500).send('Server error');
+        console.error(err.message);
+        res.status(500).send('Server Error');
     }
 };
 
-// Sell an asset from the portfolio
 exports.sellAsset = async (req, res) => {
     try {
         const { symbol, quantity, price } = req.body;
 
-        // Validate inputs
         if (!symbol || !quantity || !price) {
             return res.status(400).json({ message: 'Please provide all required fields' });
         }
 
-        // Find the asset
         const asset = await PortfolioAsset.findOne({ 
             userId: req.user.id,
             symbol: symbol
@@ -219,23 +334,19 @@ exports.sellAsset = async (req, res) => {
             return res.status(404).json({ message: 'Asset not found in your portfolio' });
         }
 
-        // Check if user has enough to sell
         if (asset.quantity < parseFloat(quantity)) {
             return res.status(400).json({ message: 'Not enough assets to sell' });
         }
 
-        // Update asset quantity
         asset.quantity -= parseFloat(quantity);
-        asset.price = parseFloat(price); // Update to latest price
+        asset.price = parseFloat(price);
 
-        // If quantity is now zero, remove the asset
         if (asset.quantity === 0) {
             await PortfolioAsset.findByIdAndDelete(asset._id);
         } else {
             await asset.save();
         }
 
-        // Create transaction record
         await PortfolioTransaction.create({
             userId: req.user.id,
             type: 'sell',
@@ -245,14 +356,12 @@ exports.sellAsset = async (req, res) => {
             date: new Date()
         });
 
-        // Create alert for sale
         await Alert.create({
             userId: req.user.id,
-            message: `Vânzare: ${quantity} ${symbol} la $${price}`,
+            message: `Sale: ${quantity} ${symbol} at $${price}`,
             type: 'info'
         });
 
-        // Update user's funds
         const user = await Users.findById(req.user.id);
         if (user) {
             const sellAmount = parseFloat(price) * parseFloat(quantity);
@@ -261,6 +370,16 @@ exports.sellAsset = async (req, res) => {
             await user.save();
         }
 
+        const assets = await PortfolioAsset.find({ userId: req.user.id });
+        const totalValue = assets.reduce((sum, asset) => sum + (asset.price * asset.quantity), 0);
+        
+        await savePortfolioHistory(
+            req.user.id,
+            assets,
+            totalValue,
+            user.investedAmount || 0
+        );
+
         res.json({ message: 'Asset sold successfully' });
     } catch (err) {
         console.error('Error in sellAsset:', err.message);
@@ -268,7 +387,114 @@ exports.sellAsset = async (req, res) => {
     }
 };
 
-// Get user's transaction history
+exports.buyStock = async (req, res) => {
+    try {
+        const { symbol, quantity, price, totalCost } = req.body;
+        const userId = req.user.id;
+
+        if (!symbol || !quantity || !price || !totalCost) {
+            return res.status(400).json({ 
+                message: 'Missing required fields',
+                details: { symbol, quantity, price, totalCost }
+            });
+        }
+
+        const userCheck = await Users.findById(userId);
+        if (!userCheck) {
+            return res.status(400).json({ 
+                message: 'User not found'
+            });
+        }
+
+        if (userCheck.availableFunds < totalCost) {
+            return res.status(400).json({ 
+                message: 'Insufficient funds'
+            });
+        }
+
+        const user = await Users.findOneAndUpdate(
+            { 
+                _id: userId,
+                availableFunds: { $gte: totalCost }
+            },
+            {
+                $inc: { 
+                    availableFunds: -totalCost,
+                    investedAmount: totalCost
+                }
+            },
+            { 
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!user) {
+            return res.status(400).json({ 
+                message: 'Failed to update user funds'
+            });
+        }
+
+        const transaction = await PortfolioTransaction.create({
+            userId: userId,
+            type: 'buy',
+            symbol: symbol,
+            quantity: quantity,
+            price: price,
+            date: new Date()
+        });
+
+        const portfolioAsset = await PortfolioAsset.findOneAndUpdate(
+            { 
+                userId: userId,
+                symbol: symbol
+            },
+            {
+                $inc: { quantity: quantity },
+                $set: { 
+                    price: price,
+                    lastUpdated: new Date(),
+                    name: symbol
+                }
+            },
+            {
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true
+            }
+        );
+        
+        const assets = await PortfolioAsset.find({ userId: userId });
+        const totalValue = assets.reduce((sum, asset) => sum + (asset.price * asset.quantity), 0);
+        
+        await savePortfolioHistory(
+            userId,
+            assets,
+            totalValue,
+            user.investedAmount || 0
+        );
+        
+        res.json({
+            message: 'Purchase successful',
+            availableFunds: user.availableFunds,
+            investedAmount: user.investedAmount,
+            transaction: {
+                id: transaction._id,
+                symbol: transaction.symbol,
+                quantity: transaction.quantity,
+                price: transaction.price
+            }
+        });
+
+    } catch (error) {
+        console.error('Error in buyStock:', error);
+        res.status(500).json({ 
+            message: 'Error processing purchase',
+            error: error.message
+        });
+    }
+};
+
 exports.getTransactions = async (req, res) => {
     try {
         const transactions = await PortfolioTransaction.find({ userId: req.user.id })
@@ -277,7 +503,7 @@ exports.getTransactions = async (req, res) => {
         const formattedTransactions = transactions.map(tx => ({
             id: tx._id,
             date: tx.date.toISOString().split('T')[0],
-            type: tx.type === 'buy' ? 'Cumpărare' : 'Vânzare',
+            type: tx.type === 'buy' ? 'Buy' : 'Sell',
             symbol: tx.symbol,
             quantity: tx.quantity,
             price: tx.price,
@@ -291,7 +517,6 @@ exports.getTransactions = async (req, res) => {
     }
 };
 
-// Get user's alerts
 exports.getAlerts = async (req, res) => {
     try {
         const alerts = await Alert.find({ userId: req.user.id })
@@ -306,7 +531,7 @@ exports.getAlerts = async (req, res) => {
                 id: alert._id,
                 message: alert.message,
                 type: alert.type,
-                time: `Acum ${diffHours} ore`,
+                time: `${diffHours} hours ago`,
                 isRead: alert.isRead
             };
         });
@@ -318,7 +543,6 @@ exports.getAlerts = async (req, res) => {
     }
 };
 
-// Mark alert as read
 exports.markAlertRead = async (req, res) => {
     try {
         const { alertId } = req.params;
@@ -328,7 +552,6 @@ exports.markAlertRead = async (req, res) => {
             return res.status(404).json({ message: 'Alert not found' });
         }
 
-        // Ensure the alert belongs to the user
         if (alert.userId.toString() !== req.user.id) {
             return res.status(403).json({ message: 'Unauthorized' });
         }
@@ -343,12 +566,10 @@ exports.markAlertRead = async (req, res) => {
     }
 };
 
-// Update user's funds (deposit or withdraw)
 exports.updateFunds = async (req, res) => {
     try {
         const { amount, type } = req.body;
 
-        // Validate input
         if (!amount || !type) {
             return res.status(400).json({ message: 'Please provide amount and type' });
         }
@@ -368,35 +589,42 @@ exports.updateFunds = async (req, res) => {
             user.availableFunds += parsedAmount;
             user.totalBalance += parsedAmount;
             
-            // Create alert for deposit
             await Alert.create({
                 userId: req.user.id,
-                message: `Depozit de $${parsedAmount.toLocaleString()} efectuat cu succes`,
+                message: `Deposit of $${parsedAmount.toLocaleString()} completed successfully`,
                 type: 'success'
             });
         } else {
-            // Check if user has enough funds
             if (user.availableFunds < parsedAmount) {
-                return res.status(400).json({ message: 'Fonduri insuficiente pentru retragere' });
+                return res.status(400).json({ message: 'Insufficient funds for withdrawal' });
             }
             
             user.availableFunds -= parsedAmount;
             user.totalBalance -= parsedAmount;
             
-            // Create alert for withdrawal
             await Alert.create({
                 userId: req.user.id,
-                message: `Retragere de $${parsedAmount.toLocaleString()} efectuată cu succes`,
+                message: `Withdrawal of $${parsedAmount.toLocaleString()} completed successfully`,
                 type: 'info'
             });
         }
 
         await user.save();
         
+        const assets = await PortfolioAsset.find({ userId: req.user.id });
+        const totalValue = assets.reduce((sum, asset) => sum + (asset.price * asset.quantity), 0);
+        
+        await savePortfolioHistory(
+            req.user.id,
+            assets,
+            totalValue,
+            user.investedAmount || 0
+        );
+        
         res.json({
             availableFunds: user.availableFunds,
             totalBalance: user.totalBalance,
-            message: `${type === 'deposit' ? 'Depozit' : 'Retragere'} efectuat(ă) cu succes`
+            message: `${type === 'deposit' ? 'Deposit' : 'Withdrawal'} completed successfully`
         });
     } catch (err) {
         console.error('Error in updateFunds:', err.message);
@@ -404,36 +632,269 @@ exports.updateFunds = async (req, res) => {
     }
 };
 
-// Update asset price (could be called by a cron job or price service)
-exports.updateAssetPrice = async (req, res) => {
+exports.getPortfolioHistory = async (req, res) => {
     try {
-        const { symbol, price, changePercent } = req.body;
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         
-        // Validate inputs
-        if (!symbol || !price) {
-            return res.status(400).json({ message: 'Please provide symbol and price' });
-        }
+        // Get portfolio history
+        const history = await PortfolioHistory.find({
+            userId: req.user.id,
+            date: { $gte: thirtyDaysAgo }
+        }).sort({ date: 1 });
+
+        // Get current portfolio assets
+        const assets = await PortfolioAsset.find({ userId: req.user.id });
         
-        // Find all assets with this symbol across all users
-        const assets = await PortfolioAsset.find({ symbol: symbol.toUpperCase() });
+        // Initialize variables for totals
+        let currentTotalValue = 0;
+        let totalInvested = 0;
         
-        if (assets.length === 0) {
-            return res.status(404).json({ message: 'No assets found with this symbol' });
-        }
+        // Initialize an empty quotesMap to avoid null errors
+        let quotesMap = {};
         
-        // Update price for all matching assets
-        for (const asset of assets) {
-            asset.price = parseFloat(price);
-            if (changePercent !== undefined) {
-                asset.changePercent = parseFloat(changePercent);
+        // Get current prices using marketstackApi
+        if (assets && assets.length > 0) {
+            const symbols = assets.map(asset => asset.symbol);
+            
+            try {
+                // Only call the API if we have symbols
+                if (symbols && symbols.length > 0) {
+                    quotesMap = await marketstackApi.getMultipleStockQuotes(symbols) || {};
+                }
+            } catch (error) {
+                console.error('Error fetching stock prices:', error);
+                // Continue with empty quotesMap
             }
-            asset.lastUpdated = new Date();
-            await asset.save();
         }
         
-        res.json({ message: `${assets.length} assets updated successfully` });
+        // Calculate current portfolio value
+        if (assets && assets.length > 0) {
+            assets.forEach(asset => {
+                // Make sure asset.symbol exists before trying to use it as a key
+                const quote = asset.symbol && quotesMap ? quotesMap[asset.symbol] : null;
+                
+                const purchasePrice = parseFloat(asset.purchasePrice) || parseFloat(asset.price) || 0;
+                // Default to purchase price if quote is not available
+                let currentPrice = purchasePrice;
+                
+                if (quote && quote.price) {
+                    currentPrice = parseFloat(quote.price);
+                }
+                
+                const quantity = parseFloat(asset.quantity) || 0;
+                const value = currentPrice * quantity;
+                
+                // Add to totals
+                currentTotalValue += value;
+                totalInvested += (purchasePrice * quantity);
+            });
+        }
+
+        // Calculate performance percentages
+        const calculateChange = (current, previous) => {
+            if (!previous || previous === 0) return 0;
+            const change = ((current - previous) / previous) * 100;
+            return Math.round(change * 100) / 100; // Round to 2 decimal places
+        };
+
+        // Calculate the overall performance
+        const overallPerformance = calculateChange(currentTotalValue, totalInvested);
+        
+        // Use the overall performance for all periods if historical data is missing
+        const performance = {
+            daily: overallPerformance,
+            weekly: overallPerformance,
+            monthly: overallPerformance,
+            yearly: overallPerformance,
+            overall: overallPerformance
+        };
+
+        // Log the calculated performance values
+        console.log("Using overall performance for all periods:", performance);
+
+        // Format history data for response
+        const formattedHistory = history && history.length > 0 
+            ? history.map(h => ({
+                date: h.date,
+                totalValue: h.totalValue || 0,
+                performance: h.performance || {
+                    daily: overallPerformance,
+                    weekly: overallPerformance,
+                    monthly: overallPerformance,
+                    yearly: overallPerformance,
+                    overall: overallPerformance
+                }
+            }))
+            : [];
+
+        res.json({
+            history: formattedHistory,
+            performance,
+            currentTotalValue,
+            totalInvested
+        });
     } catch (err) {
-        console.error('Error in updateAssetPrice:', err.message);
+        console.error('Error in getPortfolioHistory:', err.message, err.stack);
+        res.status(500).send('Server error');
+    }
+};
+
+exports.calculatePerformance = async (req, res) => {
+    try {
+        const { currentTotalValue, totalInvested, assets, useAvailableDays } = req.body;
+        
+        if (currentTotalValue === undefined) {
+            return res.status(400).json({ message: 'Current total value is required' });
+        }
+
+        const safeCurrentTotalValue = parseFloat(currentTotalValue) || 0;
+        const safeTotalInvested = parseFloat(totalInvested) || 0;
+        
+        // Calculate overall performance (this works correctly)
+        const calculateChange = (current, previous) => {
+            if (!previous || previous === 0) return 0;
+            const change = ((current - previous) / previous) * 100;
+            return Math.round(change * 100) / 100;
+        };
+
+        // Calculate the overall performance
+        const overallPerformance = calculateChange(safeCurrentTotalValue, safeTotalInvested);
+        
+        // Inițializează performanța folosind valoarea generală
+        let performance = {
+            daily: overallPerformance,
+            weekly: overallPerformance,
+            monthly: overallPerformance,
+            yearly: overallPerformance,
+            overall: overallPerformance
+        };
+
+        // Calculează performanța bazată pe istoricul portofoliului dacă avem date disponibile
+        // și useAvailableDays este adevărat
+        if (useAvailableDays) {
+            try {
+                const now = new Date();
+                const today = new Date(now);
+                today.setHours(0, 0, 0, 0);
+                
+                // Datele pentru diferite perioade
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                const oneWeekAgo = new Date(today);
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                
+                const oneMonthAgo = new Date(today);
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                
+                const oneYearAgo = new Date(today);
+                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+                // Găsește cele mai recente snapshot-uri pentru fiecare perioadă
+                // Zilnic - caută cel mai apropiat snapshot de ieri
+                const yesterdaySnapshot = await PortfolioHistory.findOne({
+                    userId: req.user.id,
+                    date: { $lt: today }
+                }).sort({ date: -1 });
+
+                // Săptămânal - caută cel mai apropiat snapshot de acum o săptămână
+                const weeklySnapshot = await PortfolioHistory.findOne({
+                    userId: req.user.id,
+                    date: { $lt: oneWeekAgo }
+                }).sort({ date: -1 });
+
+                // Lunar - caută cel mai apropiat snapshot de acum o lună
+                const monthlySnapshot = await PortfolioHistory.findOne({
+                    userId: req.user.id,
+                    date: { $lt: oneMonthAgo }
+                }).sort({ date: -1 });
+
+                // Anual - caută cel mai apropiat snapshot de acum un an
+                const yearlySnapshot = await PortfolioHistory.findOne({
+                    userId: req.user.id,
+                    date: { $lt: oneYearAgo }
+                }).sort({ date: -1 });
+
+                // Calculează performanța bazată pe datele disponibile
+                if (yesterdaySnapshot) {
+                    performance.daily = calculateChange(safeCurrentTotalValue, yesterdaySnapshot.totalValue);
+                }
+                
+                if (weeklySnapshot) {
+                    performance.weekly = calculateChange(safeCurrentTotalValue, weeklySnapshot.totalValue);
+                }
+                
+                if (monthlySnapshot) {
+                    performance.monthly = calculateChange(safeCurrentTotalValue, monthlySnapshot.totalValue);
+                }
+                
+                if (yearlySnapshot) {
+                    performance.yearly = calculateChange(safeCurrentTotalValue, yearlySnapshot.totalValue);
+                }
+
+                console.log("Calculated performance with available data:", performance);
+            } catch (error) {
+                console.error("Error calculating performance with history:", error);
+                // Folosește valorile generale în caz de eroare
+            }
+        } else {
+            console.log("Using overall performance for all periods:", performance);
+        }
+
+        let portfolioAssets;
+        if (assets && Array.isArray(assets)) {
+            portfolioAssets = assets;
+        } else {
+            portfolioAssets = await PortfolioAsset.find({ userId: req.user.id });
+        }
+
+        const validPortfolioAssets = portfolioAssets.map(asset => ({
+            symbol: asset.symbol,
+            name: asset.name,
+            price: parseFloat(asset.price) || 0,
+            quantity: parseFloat(asset.quantity) || 0,
+            value: (parseFloat(asset.price) || 0) * (parseFloat(asset.quantity) || 0),
+            changePercent: parseFloat(asset.changePercent) || 0
+        }));
+
+        // Update or create today's snapshot
+        const now = new Date();
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+        
+        let todaySnapshot = await PortfolioHistory.findOne({
+            userId: req.user.id,
+            date: {
+                $gte: today,
+                $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+            }
+        });
+
+        if (todaySnapshot) {
+            todaySnapshot.totalValue = safeCurrentTotalValue;
+            todaySnapshot.investedAmount = safeTotalInvested;
+            todaySnapshot.performance = performance;
+            todaySnapshot.assets = validPortfolioAssets;
+            await todaySnapshot.save();
+        } else {
+            await PortfolioHistory.create({
+                userId: req.user.id,
+                date: now,
+                totalValue: safeCurrentTotalValue,
+                investedAmount: safeTotalInvested,
+                performance: performance,
+                assets: validPortfolioAssets
+            });
+        }
+
+        res.json({ 
+            performance,
+            currentTotalValue: safeCurrentTotalValue,
+            totalInvested: safeTotalInvested
+        });
+    } catch (err) {
+        console.error('Error in calculatePerformance:', err.message, err.stack);
         res.status(500).send('Server error');
     }
 };

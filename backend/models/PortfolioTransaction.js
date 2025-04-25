@@ -31,7 +31,8 @@ const TransactionSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// Index for faster lookups
+// Add indexes for better performance
 TransactionSchema.index({ userId: 1, date: -1 });
+TransactionSchema.index({ symbol: 1 });
 
 module.exports = mongoose.model('PortfolioTransaction', TransactionSchema);

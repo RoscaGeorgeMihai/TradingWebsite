@@ -25,6 +25,11 @@ const AdminPage = () => {
       handleLogout();
       return;
     }
+    if (pageId === 'back') {
+      // Navigate back to the main page
+      navigate('/');
+      return;
+    }
     setActivePage(pageId);
   };
   
@@ -38,6 +43,7 @@ const AdminPage = () => {
   const AdminSidebar = () => {
     // Check if user is authenticated and has admin role
     useEffect(() => {
+      console.log('AdminPage auth state:', { isAuthenticated, isAdmin });
       if (!isAuthenticated || !isAdmin) {
         // Redirect to login or show unauthorized message
         console.log('User is not authenticated or not an admin');
@@ -74,6 +80,13 @@ const AdminPage = () => {
           ))}
         </div>
         <div className={styles.sidebarFooter}>
+          <div 
+            className={styles.sidebarItem}
+            onClick={() => handleNavigation('back')}
+          >
+            <span className={styles.sidebarIcon}>🏠</span>
+            <span className={styles.sidebarText}>Back to Main</span>
+          </div>
           <div 
             className={styles.sidebarItem}
             onClick={() => handleNavigation('logout')}
@@ -198,7 +211,6 @@ const AdminPage = () => {
           </div>
         </div>
         
-        {/* Rest of component stays the same */}
         {/* Today's Activity */}
         <div className={styles.dashboardGrid}>
           <div className={styles.card}>
@@ -391,35 +403,21 @@ const AdminPage = () => {
     );
   };
   
-  // AddAssetContent component remains the same
+  // AddAssetContent component
   const AddAssetContent = () => {
-    // Implementation remains the same
-    const [assetType, setAssetType] = useState('stock');
     const [formData, setFormData] = useState({
       symbol: '',
       name: '',
-      price: '',
-      description: '',
       category: '',
-      exchange: '',
-      logoUrl: '',
-      color: '#0dcaf0', // Default color
+      color: '#0dcaf0',
     });
-    
-    // Categories based on asset type
-    const categories = {
-      stock: ['Technology', 'Finance', 'Healthcare', 'Consumer', 'Energy', 'Industrial', 'Real Estate', 'Utilities', 'Other'],
-      crypto: ['Currency', 'Platform', 'DeFi', 'NFT', 'Metaverse', 'Web3', 'Other'],
-      commodity: ['Precious Metals', 'Energy', 'Agriculture', 'Industrial Metals', 'Livestock', 'Other'],
-    };
-    
-    // Exchanges/Markets based on asset type
-    const exchanges = {
-      stock: ['NASDAQ', 'NYSE', 'LSE', 'EURONEXT', 'TSX', 'ASX', 'OTHER'],
-      crypto: ['Binance', 'Coinbase', 'Kraken', 'KuCoin', 'Huobi', 'Other'],
-      commodity: ['COMEX', 'NYMEX', 'LME', 'ICE', 'CME', 'Other'],
-    };
-    
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+
+    const categories = ['Technology', 'Finance', 'Healthcare', 'Consumer', 'Energy', 'Industrial', 'Real Estate', 'Utilities', 'Other'];
+
     const handleChange = (e) => {
       const { name, value } = e.target;
       setFormData(prev => ({
@@ -427,45 +425,111 @@ const AdminPage = () => {
         [name]: value
       }));
     };
-    
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      console.log('Submitting stock data:', formData);
+      console.log('Current auth state:', { isAuthenticated, isAdmin });
+
+      try {
+        const response = await api.post('/api/stocks', formData);
+        console.log('Stock creation response:', response);
+        setSuccess('Stock added successfully!');
+        setFormData({
+          symbol: '',
+          name: '',
+          category: '',
+          color: '#0dcaf0',
+        });
+      } catch (err) {
+        console.error('Stock creation error:', err.response || err);
+        setError(err.response?.data?.message || 'Failed to add stock');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     return (
       <div className={styles.addAssetContainer}>
-        {/* Content remains the same */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
-            <h3 className={styles.h3}>Add New Asset</h3>
+            <h3 className={styles.h3}>Add New Stock</h3>
           </div>
           <div className={styles.cardBody}>
-            <div className={styles.assetTypeSelector}>
-              <button 
-                className={`${styles.btnAssetType} ${assetType === 'stock' ? styles.active : ''}`} 
-                onClick={() => setAssetType('stock')}
-              >
-                Stock
-              </button>
-              <button 
-                className={`${styles.btnAssetType} ${assetType === 'crypto' ? styles.active : ''}`} 
-                onClick={() => setAssetType('crypto')}
-              >
-                Cryptocurrency
-              </button>
-              <button 
-                className={`${styles.btnAssetType} ${assetType === 'commodity' ? styles.active : ''}`} 
-                onClick={() => setAssetType('commodity')}
-              >
-                Commodity
-              </button>
-            </div>
+            {error && <div className={styles.alertDanger}>{error}</div>}
+            {success && <div className={styles.alertSuccess}>{success}</div>}
             
-            <form className={styles.addAssetForm}>
-              {/* Form content remains the same */}
+            <form className={styles.addAssetForm} onSubmit={handleSubmit}>
+              <div className={styles.formGroup}>
+                <label htmlFor="symbol">Symbol</label>
+                <input
+                  type="text"
+                  id="symbol"
+                  name="symbol"
+                  value={formData.symbol}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g., AAPL"
+                  className={styles.formInput}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="name">Company Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g., Apple Inc."
+                  className={styles.formInput}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="category">Category</label>
+                <select
+                  id="category"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  required
+                  className={styles.formSelect}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="color">Color</label>
+                <input
+                  type="color"
+                  id="color"
+                  name="color"
+                  value={formData.color}
+                  onChange={handleChange}
+                  className={styles.formColorInput}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled={loading}
+              >
+                {loading ? 'Adding...' : 'Add Stock'}
+              </button>
             </form>
           </div>
-        </div>
-        
-        {/* Preview Card */}
-        <div className={styles.card}>
-          {/* Content remains the same */}
         </div>
       </div>
     );

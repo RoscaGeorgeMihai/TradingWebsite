@@ -1,0 +1,450 @@
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.phoneContainer {
+    position: relative;
+}
+
+.phoneContainer:hover {
+    transform: rotateX(0deg) rotateY(0deg);
+}
+
+.ambientLight {
+    position: absolute;
+    inset: 0;
+    filter: blur(1.5rem);
+    background: radial-gradient(circle at center, #3b82f6, #1d4ed8);
+    opacity: 0.15;
+    border-radius: 50%;
+    transform: scale(1.2);
+    z-index: -1;
+}
+
+.phoneBody {
+    position: relative;
+    width: 20rem;
+    height: 36rem;
+    background: linear-gradient(145deg, #1f2937, #111827);
+    border-radius: 2.5rem;
+    padding: 1rem;
+    box-shadow: 
+      0 25px 50px -12px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    border: 1px solid #374151;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.phoneFrame {
+    position: absolute;
+    inset: 0;
+    border-radius: 2.5rem;
+    border: 2px solid #4b5563;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.phoneGlow {
+    position: absolute;
+    inset: 0;
+    border-radius: 2.5rem;
+    border: 1px solid #6b7280;
+    opacity: 0.2;
+    pointer-events: none;
+    z-index: 20;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.edgeHighlight {
+    position: absolute;
+    top: 0;
+    left: 25%;
+    right: 25%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #9ca3af, transparent);
+    opacity: 0.3;
+    border-radius: 9999px;
+}
+
+.speakers {
+    position: absolute;
+    top: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.25rem;
+    z-index: 30;
+}
+
+.speakerHole {
+    width: 0.25rem;
+    height: 0.25rem;
+    background-color: #1f2937;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.notch {
+    position: absolute;
+    top: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6rem;
+    height: 1.75rem;
+    background: linear-gradient(to bottom, #000, #1f2937);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border: 1px solid #374151;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.notchDot1 {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #60a5fa, #3b82f6);
+    margin: 0 0.25rem;
+    opacity: 0.8;
+    box-shadow: 0 0 5px rgba(96, 165, 250, 0.5);
+}
+
+.notchDot2 {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #4b5563, #374151);
+    margin: 0 0.25rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.notchDot3 {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #4b5563, #374151);
+    margin: 0 0.25rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.screen {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(145deg, #111827, #0f172a);
+    border-radius: 1.5rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #374151;
+    margin-top: 0.5rem;
+    z-index: 10;
+    position: relative;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.statusBar {
+    width: 100%;
+    background: linear-gradient(to bottom, #111827, #0f172a);
+    color: white;
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    z-index: 20;
+}
+
+.signalStrength {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+}
+
+.signalBar {
+    width: 0.25rem;
+    height: 0.5rem;
+    background-color: #4b5563;
+    border-radius: 0.125rem;
+    transition: all 0.3s ease;
+}
+
+.signalBar.active {
+    background-color: #60a5fa;
+    box-shadow: 0 0 5px rgba(96, 165, 250, 0.5);
+}
+
+.batteryContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.batteryIcon {
+    width: 1.5rem;
+    height: 0.75rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.25rem;
+    padding: 0.125rem;
+    position: relative;
+}
+
+.batteryFill {
+    height: 100%;
+    background: linear-gradient(to right, #60a5fa, #3b82f6);
+    border-radius: 0.125rem;
+    transition: width 0.3s ease;
+}
+
+.batteryLevel {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.buttonRight1, .buttonRight2, .buttonRight3 {
+    position: absolute;
+    right: -0.5rem;
+    width: 0.25rem;
+    height: 1.5rem;
+    background: linear-gradient(to right, #374151, #1f2937);
+    border-radius: 0.125rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.buttonRight1 { top: 25%; }
+.buttonRight2 { top: 50%; transform: translateY(-50%); }
+.buttonRight3 { bottom: 25%; }
+
+.buttonLeft {
+    position: absolute;
+    left: -0.5rem;
+    top: 25%;
+    width: 0.25rem;
+    height: 3rem;
+    background: linear-gradient(to left, #374151, #1f2937);
+    border-radius: 0.125rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.chargingPort {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2rem;
+    height: 0.25rem;
+    background: linear-gradient(to bottom, #374151, #1f2937);
+    border-radius: 0.125rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.screenShadow {
+    position: absolute;
+    inset: 0;
+    border-radius: 1.5rem;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.screenGradient {
+    position: absolute;
+    inset: 0;
+    border-radius: 1.5rem;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), transparent);
+    pointer-events: none;
+}
+
+.appContent {
+    flex: 1;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    background-color: #111827;
+}
+
+.appHeader {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.appTitle {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.appIcon {
+    margin-right: 0.5rem;
+    color: #60a5fa;
+}
+
+.updateInfo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+}
+
+.updateIcon {
+    margin-right: 0.25rem;
+}
+
+.stockInfo {
+    margin-bottom: 1rem;
+    background-color: #1f2937;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    border: 1px solid #374151;
+}
+
+.stockHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stockName {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+    color: white;
+}
+
+.stockCompany {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: #9ca3af;
+}
+
+.stockPrice {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+    color: white;
+    text-align: right;
+}
+
+.priceChange {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    line-height: 1rem;
+}
+
+.priceUp {
+    color: #10b981;
+}
+
+.priceDown {
+    color: #ef4444;
+}
+
+.trendIcon {
+    margin-right: 0.25rem;
+}
+
+.chartContainer {
+    flex: 1;
+    background-color: #1f2937;
+    border-radius: 0.5rem;
+    border: 1px solid #374151;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.chartHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: #9ca3af;
+}
+
+.timeOptions {
+    display: flex;
+}
+
+.timeOptions > * + * {
+    margin-left: 0.75rem;
+}
+
+.activeTime {
+    color: #60a5fa;
+    border-bottom: 1px solid #60a5fa;
+    padding-bottom: 0.25rem;
+}
+
+.stockDetails {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.detailBox {
+    background-color: #1f2937;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #374151;
+}
+
+.detailLabel {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: #9ca3af;
+}
+
+.detailValue {
+    color: white;
+    font-weight: 500;
+}
+
+.moreDetails {
+    margin-top: 0.75rem;
+    background-color: #1f2937;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid #374151;
+}
+
+.detailsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.navBar {
+    width: 100%;
+    background-color: #111827;
+    border-top: 1px solid #1f2937;
+    padding: 0.5rem;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.homeIndicator {
+    width: 6rem;
+    height: 0.25rem;
+    background-color: #4b5563;
+    border-radius: 9999px;
+    margin: 0 auto;
+}

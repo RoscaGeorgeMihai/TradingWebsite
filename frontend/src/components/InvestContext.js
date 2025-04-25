@@ -72,7 +72,7 @@ const InvestProvider = ({ children }) => {
     dispatch({ type: 'SET_LOADING' });
     try {
       console.log('Începe încărcarea profilului...');
-      const res = await api.get('/invest/profile');
+      const res = await api.get('/api/invest/profile');
       console.log('Răspuns primit:', res.data);
       
       dispatch({
@@ -93,7 +93,7 @@ const InvestProvider = ({ children }) => {
   const depositFunds = async (amount, cardDetails) => {
     dispatch({ type: 'SET_LOADING' });
     try {
-      const res = await api.post('/invest/deposit', {
+      const res = await api.post('/api/invest/deposit', {
         amount,
         ...cardDetails
       });
@@ -120,7 +120,7 @@ const InvestProvider = ({ children }) => {
   const withdrawFunds = async (amount, iban) => {
     dispatch({ type: 'SET_LOADING' });
     try {
-      const res = await api.post('/invest/withdraw', {
+      const res = await api.post('/api/invest/withdraw', {
         amount,
         iban
       });

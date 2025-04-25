@@ -12,7 +12,7 @@ const authReducer = (state, action) => {
         isAuthenticated: true,
         user: action.payload,
         loading: false,
-        isAdmin: action.payload.role === 'admin' // Adaugă verificarea pentru admin
+        isAdmin: action.payload.role === 'admin'
       };
     case 'LOGOUT':
       return {
@@ -20,7 +20,7 @@ const authReducer = (state, action) => {
         isAuthenticated: false,
         user: null,
         loading: false,
-        isAdmin: false // Resetează starea de admin
+        isAdmin: false
       };
     case 'USER_LOADED':
       return {
@@ -28,7 +28,7 @@ const authReducer = (state, action) => {
         isAuthenticated: true,
         user: action.payload,
         loading: false,
-        isAdmin: action.payload.role === 'admin' // Verifică rolul la încărcarea utilizatorului
+        isAdmin: action.payload.role === 'admin'
       };
     case 'AUTH_ERROR':
       return {
@@ -36,7 +36,12 @@ const authReducer = (state, action) => {
         isAuthenticated: false,
         user: null,
         loading: false,
-        isAdmin: false // Resetează starea de admin în caz de eroare
+        isAdmin: false
+      };
+    case 'SET_LOADING':
+      return {
+        ...state,
+        loading: true
       };
     default:
       return state;
@@ -48,35 +53,49 @@ const AuthProvider = ({ children }) => {
     isAuthenticated: false,
     user: null,
     loading: true,
-    isAdmin: false // Adaugă starea inițială pentru admin
+    isAdmin: false
   };
 
   const [state, dispatch] = useReducer(authReducer, initialState);
 
+  // Load user only once when component mounts
   useEffect(() => {
-    loadUser();
+    const initializeAuth = async () => {
+      try {
+        const res = await api.get('/api/auth/me');
+        dispatch({
+          type: 'USER_LOADED',
+          payload: res.data
+        });
+      } catch (err) {
+        dispatch({ type: 'AUTH_ERROR' });
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
-      await api.post('/auth/login', { email, password });
+      dispatch({ type: 'SET_LOADING' });
+      const res = await api.post('/api/auth/login', { email, password });
       
       dispatch({
         type: 'LOGIN',
-        payload: { id: 'authenticated' } // Se va înlocui cu datele utilizatorului după loadUser
+        payload: res.data.user
       });
       
-      loadUser(); // Încarcă datele utilizatorului, inclusiv rolul
       return true;
     } catch (err) {
       dispatch({ type: 'AUTH_ERROR' });
-      return false;
+      throw err;
     }
   };
 
   const register = async (firstName, lastName, email, password) => {
     try {
-      await api.post('/auth/register', { 
+      dispatch({ type: 'SET_LOADING' });
+      const res = await api.post('/api/auth/register', { 
         firstName, 
         lastName, 
         email, 
@@ -85,31 +104,24 @@ const AuthProvider = ({ children }) => {
       
       dispatch({
         type: 'LOGIN',
-        payload: { id: 'authenticated' }
+        payload: res.data.user
       });
       
-      loadUser();
       return true;
     } catch (err) {
       dispatch({ type: 'AUTH_ERROR' });
-      return false;
+      throw err;
     }
   };
 
   const logout = async () => {
-    await api.post('/auth/logout');
-    dispatch({ type: 'LOGOUT' });
-  };
-
-  const loadUser = async () => {
     try {
-      const res = await api.get('/auth/me');
-      dispatch({
-        type: 'USER_LOADED',
-        payload: res.data
-      });
+      await api.post('/api/auth/logout');
+      dispatch({ type: 'LOGOUT' });
     } catch (err) {
-      dispatch({ type: 'AUTH_ERROR' });
+      console.error('Logout error:', err);
+      // Still logout on frontend even if backend fails
+      dispatch({ type: 'LOGOUT' });
     }
   };
 
@@ -117,13 +129,12 @@ const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         isAuthenticated: state.isAuthenticated,
-        isAdmin: state.isAdmin, // Expune starea de admin
+        isAdmin: state.isAdmin,
         user: state.user,
         loading: state.loading,
         login,
         register,
-        logout,
-        loadUser
+        logout
       }}
     >
       {children}

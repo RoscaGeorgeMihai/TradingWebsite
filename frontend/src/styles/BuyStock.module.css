@@ -1,0 +1,363 @@
+/* Variabile CSS pentru schema de culori */
+:root {
+  --primary-color: #1a2634;
+  --secondary-color: #0dcaf0;
+  --dark-bg: #0a1218;
+  --card-bg: #1a2634;
+  --text-color: #ffffff;
+  --positive: #00c853;
+  --negative: #ff5252;
+  --border-radius: 8px;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+.container {
+  max-width: 800px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: var(--text-color);
+}
+
+.toggleContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: 0.4s;
+  border-radius: 30px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--secondary-color);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--secondary-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(30px);
+}
+
+.activeMode {
+  color: var(--secondary-color);
+  font-weight: 600;
+}
+
+.calculatedShares {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius);
+  display: flex;
+  justify-content: space-between;
+}
+
+.availableFunds {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  background-color: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.fundsLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+  margin-right: 8px;
+}
+
+.fundsValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #28a745;
+}
+
+.warningMessage {
+  color: #dc3545;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: var(--secondary-color);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-right: 1rem;
+  transition: color 0.2s;
+}
+
+.backButton:hover {
+  color: var(--text-color);
+}
+
+.content {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stockInfo {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.currentPrice,
+.change {
+  flex: 1;
+}
+
+.label {
+  display: block;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.positive {
+  color: var(--positive);
+}
+
+.negative {
+  color: var(--negative);
+}
+
+.purchaseForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quantityInput {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  width: 100%;
+  max-width: 200px;
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--text-color);
+}
+
+.quantityInput:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.1);
+}
+
+.totalCost {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius);
+}
+
+.purchaseButton {
+  background: var(--positive);
+  color: var(--text-color);
+  border: none;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.purchaseButton:hover:not(:disabled) {
+  background: #00a844;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.purchaseButton:disabled {
+  background: rgba(0, 200, 83, 0.5);
+  cursor: not-allowed;
+}
+
+.successMessage {
+  text-align: center;
+  color: var(--positive);
+  font-weight: 500;
+  padding: 1rem;
+  background: rgba(0, 200, 83, 0.1);
+  border-radius: var(--border-radius);
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(13, 202, 240, 0.3);
+  border-top: 4px solid var(--secondary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  padding: 40px;
+  border-radius: var(--border-radius);
+  background-color: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.errorContainer h2 {
+  color: var(--negative);
+  margin-bottom: 1rem;
+}
+
+.btnRetry {
+  background: var(--secondary-color);
+  color: var(--primary-color);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btnRetry:hover {
+  background: #0ab8d9;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .availableFunds {
+    margin-left: 0;
+    margin-top: 10px;
+    align-self: flex-end;
+  }
+  .container {
+    padding: 0 15px;
+  }
+
+  .stockInfo {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .content {
+    padding: 1.5rem;
+  }
+
+  .purchaseButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .value {
+    font-size: 1.2rem;
+  }
+
+  .quantityInput {
+    max-width: 100%;
+  }
+} 
