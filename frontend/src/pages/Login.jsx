@@ -24,7 +24,13 @@ const Login = () => {
       }
     } catch(err) {
       console.error(err);
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      
+      // Check if it's a deactivated account error
+      if (err.response?.status === 403 && err.response?.data?.message?.includes('deactivated')) {
+        setError(`${err.response.data.message} Please contact our support team for assistance.`);
+      } else {
+        setError(err.response?.data?.message || 'Login failed. Please try again.');
+      }
     }
   };
   

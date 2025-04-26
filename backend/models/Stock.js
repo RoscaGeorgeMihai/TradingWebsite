@@ -5,8 +5,8 @@ const stockSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true,
-    uppercase: true
+    uppercase: true,
+    trim: true
   },
   name: {
     type: String,
@@ -16,26 +16,16 @@ const stockSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['Technology', 'Finance', 'Healthcare', 'Consumer', 'Energy', 'Industrial', 'Real Estate', 'Utilities', 'Other']
+    trim: true
   },
   color: {
     type: String,
     default: '#0dcaf0'
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  isPopular: {
+    type: Boolean,
+    default: false
   }
-});
-
-// Update the updatedAt field before saving
-stockSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Stock', stockSchema); 

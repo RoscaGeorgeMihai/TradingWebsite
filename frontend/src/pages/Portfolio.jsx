@@ -85,125 +85,122 @@ const Portfolio = () => {
     }
   };
 
-  const fetchCurrentStockPrices = async (data) => {
+ // Funcția îmbunătățită pentru obținerea prețurilor curente ale acțiunilor
+const fetchCurrentStockPrices = async (data) => {
+  try {
+    setStocksLoading(true);
+
+    if (!data || !data.assets || data.assets.length === 0) {
+      setStocksLoading(false);
+      return;
+    }
+
+    const symbols = data.assets.map(asset => asset.symbol);
+    let quotesMap = {};
+
     try {
-      setStocksLoading(true);
+      quotesMap = await marketstackApi.getMultipleStockQuotes(symbols);
+    } catch (error) {
+      console.error('Error fetching stock quotes:', error);
+    }
 
-      if (!data || !data.assets || data.assets.length === 0) {
-        setStocksLoading(false);
-        return;
-      }
+    if (quotesMap) {
+      const updatedAssets = data.assets.map(asset => {
+        const quote = quotesMap[asset.symbol];
+        const purchasePrice = parseFloat(asset.purchasePrice) || parseFloat(asset.price) || 0;
 
-      const symbols = data.assets.map(asset => asset.symbol);
-      let quotesMap = {};
+        let currentPrice = purchasePrice;
+
+        if (quote && quote.price) {
+          currentPrice = parseFloat(quote.price);
+        }
+
+        const quantity = parseFloat(asset.quantity) || 0;
+        const changeValue = currentPrice - purchasePrice;
+        const changePercent = purchasePrice > 0 ? (changeValue / purchasePrice) * 100 : 0;
+
+        return {
+          ...asset,
+          price: currentPrice,
+          purchasePrice: purchasePrice,
+          quantity: quantity,
+          value: currentPrice * quantity,
+          changeValue: changeValue,
+          changePercent: changePercent
+        };
+      });
+
+      let totalValue = 0;
+      let totalInvested = 0;
+
+      updatedAssets.forEach(asset => {
+        const price = parseFloat(asset.price) || 0;
+        const quantity = parseFloat(asset.quantity) || 0;
+        const purchasePrice = parseFloat(asset.purchasePrice) || price || 0;
+
+        const currentValue = price * quantity;
+        totalValue += currentValue;
+        totalInvested += (purchasePrice * quantity);
+      });
+
+      const changeValue = totalInvested > 0 ? totalValue - totalInvested : 0;
+      const overallChangePercent = totalInvested > 0 ? (changeValue / totalInvested) * 100 : 0;
+
+      // Save the overall change as the performance baseline in case API call fails
+      const baselinePerformance = {
+        daily: overallChangePercent,
+        weekly: overallChangePercent,
+        monthly: overallChangePercent,
+        yearly: overallChangePercent,
+        overall: overallChangePercent
+      };
 
       try {
-        quotesMap = await marketstackApi.getMultipleStockQuotes(symbols);
-      } catch (error) {
-        console.error('Error fetching stock quotes:', error);
-      }
+        const performanceResponse = await api.post('/api/portfolio/calculate-performance', {
+          currentTotalValue: totalValue,
+          totalInvested: totalInvested,
+          assets: updatedAssets.map(asset => ({
+            symbol: asset.symbol,
+            name: asset.name,
+            price: parseFloat(asset.price) || 0,
+            quantity: parseFloat(asset.quantity) || 0,
+            value: parseFloat(asset.value) || 0,
+            changePercent: parseFloat(asset.changePercent) || 0
+          })),
+          // Add this parameter to indicate we want to use available days even if less than 7
+          useAvailableDays: true
+        });
 
-      if (quotesMap) {
-        const updatedAssets = data.assets.map(asset => {
-          const quote = quotesMap[asset.symbol];
-          const purchasePrice = parseFloat(asset.purchasePrice) || parseFloat(asset.price) || 0;
+        if (performanceResponse && performanceResponse.data) {
+          const { performance, currentTotalValue, totalInvested: updatedTotalInvested } = performanceResponse.data;
 
-          let currentPrice = purchasePrice;
+          // Adăugăm log pentru a verifica ce date primim de la API
+          console.log('Performance received from API:', 
+                     JSON.stringify(performance, null, 2), 
+                     'totalValue:', currentTotalValue, 
+                     'totalInvested:', updatedTotalInvested);
 
-          if (quote && quote.price) {
-            currentPrice = parseFloat(quote.price);
+          // Update portfolio history with latest performance data
+          if (performance && portfolioHistory) {
+            // Ne asigurăm că folosim exact valorile primite, nu le modificăm
+            setPortfolioHistory({
+              ...portfolioHistory,
+              performance: performance,
+              currentTotalValue: currentTotalValue,
+              totalInvested: updatedTotalInvested
+            });
           }
 
-          const quantity = parseFloat(asset.quantity) || 0;
-          const changeValue = currentPrice - purchasePrice;
-          const changePercent = purchasePrice > 0 ? (changeValue / purchasePrice) * 100 : 0;
-
-          return {
-            ...asset,
-            price: currentPrice,
-            purchasePrice: purchasePrice,
-            quantity: quantity,
-            value: currentPrice * quantity,
-            changeValue: changeValue,
-            changePercent: changePercent
-          };
-        });
-
-        let totalValue = 0;
-        let totalInvested = 0;
-
-        updatedAssets.forEach(asset => {
-          const price = parseFloat(asset.price) || 0;
-          const quantity = parseFloat(asset.quantity) || 0;
-          const purchasePrice = parseFloat(asset.purchasePrice) || price || 0;
-
-          const currentValue = price * quantity;
-          totalValue += currentValue;
-          totalInvested += (purchasePrice * quantity);
-        });
-
-        const changeValue = totalInvested > 0 ? totalValue - totalInvested : 0;
-        const overallChangePercent = totalInvested > 0 ? (changeValue / totalInvested) * 100 : 0;
-
-        // Save the overall change as the performance baseline in case API call fails
-        const baselinePerformance = {
-          daily: overallChangePercent,
-          weekly: overallChangePercent,
-          monthly: overallChangePercent,
-          yearly: overallChangePercent,
-          overall: overallChangePercent
-        };
-
-        try {
-          const performanceResponse = await api.post('/api/portfolio/calculate-performance', {
-            currentTotalValue: totalValue,
-            totalInvested: totalInvested,
-            assets: updatedAssets.map(asset => ({
-              symbol: asset.symbol,
-              name: asset.name,
-              price: parseFloat(asset.price) || 0,
-              quantity: parseFloat(asset.quantity) || 0,
-              value: parseFloat(asset.value) || 0,
-              changePercent: parseFloat(asset.changePercent) || 0
-            })),
-            // Add this parameter to indicate we want to use available days even if less than 7
-            useAvailableDays: true
+          // Ne asigurăm că folosim exact valorile primite, nu le modificăm
+          setPortfolioData({
+            ...data,
+            assets: updatedAssets,
+            totalValue: currentTotalValue || totalValue,
+            totalInvested: updatedTotalInvested || totalInvested,
+            dailyChange: performance?.daily,
+            performance: performance
           });
-
-          if (performanceResponse && performanceResponse.data) {
-            const { performance, currentTotalValue, totalInvested: updatedTotalInvested } = performanceResponse.data;
-
-            // Update portfolio history with latest performance data
-            if (performance && portfolioHistory) {
-              setPortfolioHistory({
-                ...portfolioHistory,
-                performance: performance,
-                currentTotalValue: currentTotalValue,
-                totalInvested: updatedTotalInvested
-              });
-            }
-
-            setPortfolioData({
-              ...data,
-              assets: updatedAssets,
-              totalValue: currentTotalValue || totalValue,
-              totalInvested: updatedTotalInvested || totalInvested,
-              dailyChange: performance?.daily || overallChangePercent,
-              performance: performance || baselinePerformance
-            });
-          } else {
-            setPortfolioData({
-              ...data,
-              assets: updatedAssets,
-              totalValue: totalValue,
-              totalInvested: totalInvested,
-              dailyChange: overallChangePercent,
-              performance: baselinePerformance
-            });
-          }
-        } catch (apiError) {
-          console.error("Error calculating performance:", apiError);
-
+        } else {
           setPortfolioData({
             ...data,
             assets: updatedAssets,
@@ -213,13 +210,25 @@ const Portfolio = () => {
             performance: baselinePerformance
           });
         }
+      } catch (apiError) {
+        console.error("Error calculating performance:", apiError);
+
+        setPortfolioData({
+          ...data,
+          assets: updatedAssets,
+          totalValue: totalValue,
+          totalInvested: totalInvested,
+          dailyChange: overallChangePercent,
+          performance: baselinePerformance
+        });
       }
-    } catch (err) {
-      console.error("Error in fetchCurrentStockPrices:", err);
-    } finally {
-      setStocksLoading(false);
     }
-  };
+  } catch (err) {
+    console.error("Error in fetchCurrentStockPrices:", err);
+  } finally {
+    setStocksLoading(false);
+  }
+};
 
   useEffect(() => {
     const handleResize = () => {
@@ -545,130 +554,128 @@ const AssetAllocation = () => {
   );
 };
 
-  const Performance = () => {
-    if (!portfolioHistory || !portfolioHistory.performance) {
-      // Use portfolio data performance if history is not available
-      if (portfolioData && portfolioData.performance) {
-        const performance = portfolioData.performance;
-        
-        const performancePeriods = [
-          { label: 'Today', value: performance.daily || 0 },
-          { label: 'This Week', value: performance.weekly || 0 },
-          { label: 'This Month', value: performance.monthly || 0 },
-          { label: 'This Year', value: performance.yearly || 0 },
-          { label: 'Overall', value: performance.overall || 0 }
-        ];
-  
-        const formatPercentage = (value) => {
-          const numValue = parseFloat(value) || 0;
-          const isPositive = numValue >= 0;
-          return `${isPositive ? '+' : ''}${numValue.toFixed(2)}%`;
-        };
-  
-        return (
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.h3}>Portfolio Performance</h3>
-            </div>
-            <div className={styles.cardBody}>
-              {performancePeriods.map((period, index) => {
-                const value = parseFloat(period.value) || 0;
-                const isPositive = value >= 0;
-                const formattedValue = formatPercentage(value);
-  
-                return (
-                  <div key={index} className={styles.progressContainer}>
-                    <div className={styles.progressLabel}>
-                      <span>{period.label}</span>
-                      <span className={isPositive ? styles.textSuccess : styles.textDanger}>
-                        {formattedValue}
-                      </span>
-                    </div>
-                    <div className={styles.progressBar}>
-                      <div
-                        className={`${styles.progressFill} ${isPositive ? styles.progressFillSuccess : styles.progressFillDanger}`}
-                        style={{ width: `${Math.min(Math.abs(value) * 2, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      }
+const Performance = () => {
+  if (!portfolioHistory || !portfolioHistory.performance) {
+    // Folosește datele de performanță din portfolioData dacă istoricul nu este disponibil
+    if (portfolioData && portfolioData.performance) {
+      const performance = portfolioData.performance;
       
+      // Am eliminat console.log-ul pentru debugging
+      
+      // Verificăm explicit fiecare perioadă pentru a ne asigura că folosim valoarea corectă
+      const performancePeriods = [
+        { label: 'Today', value: performance.daily !== undefined ? performance.daily : 0 },
+        { label: 'This Week', value: performance.weekly !== undefined ? performance.weekly : 0 },
+        { label: 'This Month', value: performance.monthly !== undefined ? performance.monthly : 0 },
+        { label: 'This Year', value: performance.yearly !== undefined ? performance.yearly : 0 },
+        { label: 'Overall', value: performance.overall !== undefined ? performance.overall : 0 }
+      ];
+
+      const formatPercentage = (value) => {
+        const numValue = parseFloat(value);
+        if (isNaN(numValue)) return 'N/A';
+        const isPositive = numValue >= 0;
+        return `${isPositive ? '+' : ''}${numValue.toFixed(2)}%`;
+      };
+
       return (
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <h3 className={styles.h3}>Portfolio Performance</h3>
           </div>
           <div className={styles.cardBody}>
-            <div className={styles.emptyMessage}>No performance data available.</div>
+            {performancePeriods.map((period, index) => {
+              const value = parseFloat(period.value);
+              const isPositive = value >= 0;
+              const formattedValue = formatPercentage(period.value);
+
+              return (
+                <div key={index} className={styles.progressContainer}>
+                  <div className={styles.progressLabel}>
+                    <span>{period.label}</span>
+                    <span className={isPositive ? styles.textSuccess : styles.textDanger}>
+                      {formattedValue}
+                    </span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div
+                      className={`${styles.progressFill} ${isPositive ? styles.progressFillSuccess : styles.progressFillDanger}`}
+                      style={{ width: `${Math.min(Math.abs(value) * 2, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       );
     }
-  
-    // Calculate the best available performance data
-    const historyPerformance = portfolioHistory.performance || {};
-    const portfolioPerformance = portfolioData.performance || {};
     
-    // Use history data and fall back to portfolio data
-    const performance = {
-      daily: historyPerformance.daily || portfolioPerformance.daily || 0,
-      weekly: historyPerformance.weekly || portfolioPerformance.weekly || 0,
-      monthly: historyPerformance.monthly || portfolioPerformance.monthly || 0,
-      yearly: historyPerformance.yearly || portfolioPerformance.yearly || 0,
-      overall: historyPerformance.overall || portfolioPerformance.overall || 0
-    };
-  
-    const performancePeriods = [
-      { label: 'Today', value: performance.daily },
-      { label: 'This Week', value: performance.weekly },
-      { label: 'This Month', value: performance.monthly },
-      { label: 'This Year', value: performance.yearly },
-      { label: 'Overall', value: performance.overall }
-    ];
-  
-    const formatPercentage = (value) => {
-      const numValue = parseFloat(value) || 0;
-      const isPositive = numValue >= 0;
-      return `${isPositive ? '+' : ''}${numValue.toFixed(2)}%`;
-    };
-  
     return (
       <div className={styles.card}>
         <div className={styles.cardHeader}>
           <h3 className={styles.h3}>Portfolio Performance</h3>
         </div>
         <div className={styles.cardBody}>
-          {performancePeriods.map((period, index) => {
-            const value = parseFloat(period.value) || 0;
-            const isPositive = value >= 0;
-            const formattedValue = formatPercentage(value);
-
-            return (
-              <div key={index} className={styles.progressContainer}>
-                <div className={styles.progressLabel}>
-                  <span>{period.label}</span>
-                  <span className={isPositive ? styles.textSuccess : styles.textDanger}>
-                    {formattedValue}
-                  </span>
-                </div>
-                <div className={styles.progressBar}>
-                  <div
-                    className={`${styles.progressFill} ${isPositive ? styles.progressFillSuccess : styles.progressFillDanger}`}
-                    style={{ width: `${Math.min(Math.abs(value) * 2, 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-            );
-          })}
+          <div className={styles.emptyMessage}>No performance data available.</div>
         </div>
       </div>
     );
+  }
+
+  // Folosește datele de performanță din istoricul portofoliului
+  const performance = portfolioHistory.performance || {};
+  
+  // Am eliminat console.log-ul pentru debugging
+  
+  // Verificăm explicit fiecare perioadă pentru a ne asigura că folosim valoarea corectă
+  const performancePeriods = [
+    { label: 'Today', value: performance.daily !== undefined ? performance.daily : 0 },
+    { label: 'This Week', value: performance.weekly !== undefined ? performance.weekly : 0 },
+    { label: 'This Month', value: performance.monthly !== undefined ? performance.monthly : 0 },
+    { label: 'This Year', value: performance.yearly !== undefined ? performance.yearly : 0 },
+    { label: 'Overall', value: performance.overall !== undefined ? performance.overall : 0 }
+  ];
+
+  const formatPercentage = (value) => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return 'N/A';
+    const isPositive = numValue >= 0;
+    return `${isPositive ? '+' : ''}${numValue.toFixed(2)}%`;
   };
+
+  return (
+    <div className={styles.card}>
+      <div className={styles.cardHeader}>
+        <h3 className={styles.h3}>Portfolio Performance</h3>
+      </div>
+      <div className={styles.cardBody}>
+        {performancePeriods.map((period, index) => {
+          const value = parseFloat(period.value);
+          const isPositive = value >= 0;
+          const formattedValue = formatPercentage(period.value);
+
+          return (
+            <div key={index} className={styles.progressContainer}>
+              <div className={styles.progressLabel}>
+                <span>{period.label}</span>
+                <span className={isPositive ? styles.textSuccess : styles.textDanger}>
+                  {formattedValue}
+                </span>
+              </div>
+              <div className={styles.progressBar}>
+                <div
+                  className={`${styles.progressFill} ${isPositive ? styles.progressFillSuccess : styles.progressFillDanger}`}
+                  style={{ width: `${Math.min(Math.abs(value) * 2, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
   const AssetList = () => {
     if (!hasAssets) {

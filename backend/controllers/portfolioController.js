@@ -3,6 +3,7 @@ const PortfolioAsset = require('../models/PortfolioAsset');
 const PortfolioTransaction = require('../models/PortfolioTransaction');
 const PortfolioHistory = require('../models/PortfolioHistory');
 const Alert = require('../models/Alert');
+const Stock = require('../models/Stock');
 const mongoose = require('mongoose');
 const axios = require('axios');
 const marketstackApi = require('../services/marketstackApi');
@@ -637,45 +638,45 @@ exports.getPortfolioHistory = async (req, res) => {
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         
-        // Get portfolio history
+        // Obține istoricul portofoliului
         const history = await PortfolioHistory.find({
             userId: req.user.id,
             date: { $gte: thirtyDaysAgo }
         }).sort({ date: 1 });
 
-        // Get current portfolio assets
+        // Obține activele curente ale portofoliului
         const assets = await PortfolioAsset.find({ userId: req.user.id });
         
-        // Initialize variables for totals
+        // Inițializează variabile pentru totaluri
         let currentTotalValue = 0;
         let totalInvested = 0;
         
-        // Initialize an empty quotesMap to avoid null errors
+        // Inițializează un quotesMap gol pentru a evita erorile de null
         let quotesMap = {};
         
-        // Get current prices using marketstackApi
+        // Obține prețurile curente folosind marketstackApi
         if (assets && assets.length > 0) {
             const symbols = assets.map(asset => asset.symbol);
             
             try {
-                // Only call the API if we have symbols
+                // Apelează API-ul doar dacă avem simboluri
                 if (symbols && symbols.length > 0) {
                     quotesMap = await marketstackApi.getMultipleStockQuotes(symbols) || {};
                 }
             } catch (error) {
                 console.error('Error fetching stock prices:', error);
-                // Continue with empty quotesMap
+                // Continuă cu un quotesMap gol
             }
         }
         
-        // Calculate current portfolio value
+        // Calculează valoarea curentă a portofoliului
         if (assets && assets.length > 0) {
             assets.forEach(asset => {
-                // Make sure asset.symbol exists before trying to use it as a key
+                // Asigură-te că asset.symbol există înainte de a-l folosi ca și cheie
                 const quote = asset.symbol && quotesMap ? quotesMap[asset.symbol] : null;
                 
                 const purchasePrice = parseFloat(asset.purchasePrice) || parseFloat(asset.price) || 0;
-                // Default to purchase price if quote is not available
+                // Folosește prețul de achiziție dacă cotația nu este disponibilă
                 let currentPrice = purchasePrice;
                 
                 if (quote && quote.price) {
@@ -685,24 +686,61 @@ exports.getPortfolioHistory = async (req, res) => {
                 const quantity = parseFloat(asset.quantity) || 0;
                 const value = currentPrice * quantity;
                 
-                // Add to totals
+                // Adaugă la totaluri
                 currentTotalValue += value;
                 totalInvested += (purchasePrice * quantity);
             });
         }
 
-        // Calculate performance percentages
+        // Funcție helper pentru calculul schimbării procentuale
         const calculateChange = (current, previous) => {
             if (!previous || previous === 0) return 0;
             const change = ((current - previous) / previous) * 100;
-            return Math.round(change * 100) / 100; // Round to 2 decimal places
+            return Math.round(change * 100) / 100; // Rotunjește la 2 zecimale
         };
 
-        // Calculate the overall performance
+        // Calculează performanța generală
         const overallPerformance = calculateChange(currentTotalValue, totalInvested);
         
-        // Use the overall performance for all periods if historical data is missing
-        const performance = {
+        // Obține date pentru perioade specifice (zilnic, săptămânal, lunar, anual)
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+        
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const oneWeekAgo = new Date(today);
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        
+        const oneMonthAgo = new Date(today);
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        
+        const oneYearAgo = new Date(today);
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+        // Găsește cele mai recente snapshot-uri pentru fiecare perioadă
+        const yesterdaySnapshot = await PortfolioHistory.findOne({
+            userId: req.user.id,
+            date: { $lt: today, $gte: yesterday }
+        }).sort({ date: -1 });
+
+        const weeklySnapshot = await PortfolioHistory.findOne({
+            userId: req.user.id,
+            date: { $lt: oneWeekAgo }
+        }).sort({ date: -1 });
+
+        const monthlySnapshot = await PortfolioHistory.findOne({
+            userId: req.user.id,
+            date: { $lt: oneMonthAgo }
+        }).sort({ date: -1 });
+
+        const yearlySnapshot = await PortfolioHistory.findOne({
+            userId: req.user.id,
+            date: { $lt: oneYearAgo }
+        }).sort({ date: -1 });
+
+        // Inițializează performanța cu valoarea generală
+        let performance = {
             daily: overallPerformance,
             weekly: overallPerformance,
             monthly: overallPerformance,
@@ -710,24 +748,33 @@ exports.getPortfolioHistory = async (req, res) => {
             overall: overallPerformance
         };
 
-        // Log the calculated performance values
-        console.log("Using overall performance for all periods:", performance);
+        // Calculează performanța bazată pe datele disponibile
+        if (yesterdaySnapshot && yesterdaySnapshot.totalValue > 0) {
+            performance.daily = calculateChange(currentTotalValue, yesterdaySnapshot.totalValue);
+        }
+        
+        if (weeklySnapshot && weeklySnapshot.totalValue > 0) {
+            performance.weekly = calculateChange(currentTotalValue, weeklySnapshot.totalValue);
+        }
+        
+        if (monthlySnapshot && monthlySnapshot.totalValue > 0) {
+            performance.monthly = calculateChange(currentTotalValue, monthlySnapshot.totalValue);
+        }
+        
+        if (yearlySnapshot && yearlySnapshot.totalValue > 0) {
+            performance.yearly = calculateChange(currentTotalValue, yearlySnapshot.totalValue);
+        }
 
-        // Format history data for response
+        // Formatează datele istorice pentru răspuns
         const formattedHistory = history && history.length > 0 
             ? history.map(h => ({
                 date: h.date,
                 totalValue: h.totalValue || 0,
-                performance: h.performance || {
-                    daily: overallPerformance,
-                    weekly: overallPerformance,
-                    monthly: overallPerformance,
-                    yearly: overallPerformance,
-                    overall: overallPerformance
-                }
+                performance: h.performance || performance
             }))
             : [];
 
+        // Returnează datele formatate
         res.json({
             history: formattedHistory,
             performance,
@@ -751,27 +798,27 @@ exports.calculatePerformance = async (req, res) => {
         const safeCurrentTotalValue = parseFloat(currentTotalValue) || 0;
         const safeTotalInvested = parseFloat(totalInvested) || 0;
         
-        // Calculate overall performance (this works correctly)
+        // Funcție helper pentru calculul schimbării procentuale
         const calculateChange = (current, previous) => {
             if (!previous || previous === 0) return 0;
             const change = ((current - previous) / previous) * 100;
             return Math.round(change * 100) / 100;
         };
 
-        // Calculate the overall performance
+        // Calculează performanța generală
         const overallPerformance = calculateChange(safeCurrentTotalValue, safeTotalInvested);
         
-        // Inițializează performanța folosind valoarea generală
+        // Inițializează performanța cu valoarea generală doar pentru 'overall'
+        // Celelalte valori vor fi considerate 0 până când sunt actualizate cu date corecte
         let performance = {
-            daily: overallPerformance,
-            weekly: overallPerformance,
-            monthly: overallPerformance,
-            yearly: overallPerformance,
+            daily: 0,
+            weekly: 0,
+            monthly: 0,
+            yearly: 0,
             overall: overallPerformance
         };
 
-        // Calculează performanța bazată pe istoricul portofoliului dacă avem date disponibile
-        // și useAvailableDays este adevărat
+        // Dacă useAvailableDays este true, încercăm să calculăm performanța bazată pe istoricul portofoliului
         if (useAvailableDays) {
             try {
                 const now = new Date();
@@ -792,56 +839,80 @@ exports.calculatePerformance = async (req, res) => {
                 oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
                 // Găsește cele mai recente snapshot-uri pentru fiecare perioadă
-                // Zilnic - caută cel mai apropiat snapshot de ieri
                 const yesterdaySnapshot = await PortfolioHistory.findOne({
                     userId: req.user.id,
                     date: { $lt: today }
                 }).sort({ date: -1 });
 
-                // Săptămânal - caută cel mai apropiat snapshot de acum o săptămână
                 const weeklySnapshot = await PortfolioHistory.findOne({
                     userId: req.user.id,
                     date: { $lt: oneWeekAgo }
                 }).sort({ date: -1 });
 
-                // Lunar - caută cel mai apropiat snapshot de acum o lună
                 const monthlySnapshot = await PortfolioHistory.findOne({
                     userId: req.user.id,
                     date: { $lt: oneMonthAgo }
                 }).sort({ date: -1 });
 
-                // Anual - caută cel mai apropiat snapshot de acum un an
                 const yearlySnapshot = await PortfolioHistory.findOne({
                     userId: req.user.id,
                     date: { $lt: oneYearAgo }
                 }).sort({ date: -1 });
 
                 // Calculează performanța bazată pe datele disponibile
-                if (yesterdaySnapshot) {
+                if (yesterdaySnapshot && yesterdaySnapshot.totalValue > 0) {
                     performance.daily = calculateChange(safeCurrentTotalValue, yesterdaySnapshot.totalValue);
+                } else {
+                    // Dacă nu avem date pentru ieri, folosim performanța generală
+                    performance.daily = overallPerformance;
                 }
                 
-                if (weeklySnapshot) {
+                if (weeklySnapshot && weeklySnapshot.totalValue > 0) {
                     performance.weekly = calculateChange(safeCurrentTotalValue, weeklySnapshot.totalValue);
+                } else {
+                    // Dacă nu avem date săptămânale, folosim performanța generală numai dacă nu există date zilnice
+                    performance.weekly = performance.daily !== 0 ? performance.daily : overallPerformance;
                 }
                 
-                if (monthlySnapshot) {
+                if (monthlySnapshot && monthlySnapshot.totalValue > 0) {
                     performance.monthly = calculateChange(safeCurrentTotalValue, monthlySnapshot.totalValue);
+                } else {
+                    // Dacă nu avem date lunare, folosim performanța săptămânală dacă este disponibilă
+                    performance.monthly = performance.weekly !== 0 ? performance.weekly : overallPerformance;
                 }
                 
-                if (yearlySnapshot) {
+                if (yearlySnapshot && yearlySnapshot.totalValue > 0) {
                     performance.yearly = calculateChange(safeCurrentTotalValue, yearlySnapshot.totalValue);
+                } else {
+                    // Dacă nu avem date anuale, folosim performanța lunară dacă este disponibilă
+                    performance.yearly = performance.monthly !== 0 ? performance.monthly : overallPerformance;
                 }
 
-                console.log("Calculated performance with available data:", performance);
+                console.log("Calculated performance with available data:", JSON.stringify(performance));
             } catch (error) {
                 console.error("Error calculating performance with history:", error);
-                // Folosește valorile generale în caz de eroare
+                // În caz de eroare, folosim performanța generală pentru toate perioadele
+                performance = {
+                    daily: overallPerformance,
+                    weekly: overallPerformance,
+                    monthly: overallPerformance,
+                    yearly: overallPerformance,
+                    overall: overallPerformance
+                };
             }
         } else {
-            console.log("Using overall performance for all periods:", performance);
+            // Dacă nu se utilizează datele disponibile, folosim performanța generală pentru toate perioadele
+            performance = {
+                daily: overallPerformance,
+                weekly: overallPerformance,
+                monthly: overallPerformance,
+                yearly: overallPerformance,
+                overall: overallPerformance
+            };
+            console.log("Using overall performance for all periods:", JSON.stringify(performance));
         }
 
+        // Procesează activele portofoliului pentru a le stoca în istoricul zilnic
         let portfolioAssets;
         if (assets && Array.isArray(assets)) {
             portfolioAssets = assets;
@@ -858,7 +929,7 @@ exports.calculatePerformance = async (req, res) => {
             changePercent: parseFloat(asset.changePercent) || 0
         }));
 
-        // Update or create today's snapshot
+        // Actualizează sau creează snapshot-ul pentru ziua curentă
         const now = new Date();
         const today = new Date(now);
         today.setHours(0, 0, 0, 0);
@@ -888,6 +959,7 @@ exports.calculatePerformance = async (req, res) => {
             });
         }
 
+        // Returnează datele actualizate
         res.json({ 
             performance,
             currentTotalValue: safeCurrentTotalValue,
@@ -895,6 +967,46 @@ exports.calculatePerformance = async (req, res) => {
         });
     } catch (err) {
         console.error('Error in calculatePerformance:', err.message, err.stack);
+        res.status(500).send('Server error');
+    }
+};
+
+exports.getPortfolioDistribution = async (req, res) => {
+    try {
+        // Get all portfolio assets
+        const allAssets = await PortfolioAsset.find({});
+        
+        // Get all stocks to get their colors
+        const stocks = await Stock.find({});
+        const stockColors = stocks.reduce((acc, stock) => {
+            acc[stock.symbol] = stock.color;
+            return acc;
+        }, {});
+        
+        // Group assets by symbol and calculate total shares
+        const distribution = allAssets.reduce((acc, asset) => {
+            const symbol = asset.symbol;
+            if (!acc[symbol]) {
+                acc[symbol] = {
+                    symbol: symbol,
+                    totalShares: 0,
+                    color: stockColors[symbol] || '#0dcaf0' // Use stock color or default
+                };
+            }
+            acc[symbol].totalShares += asset.quantity;
+            return acc;
+        }, {});
+
+        // Convert to array and sort by total shares
+        const portfolioAssets = Object.values(distribution)
+            .sort((a, b) => b.totalShares - a.totalShares);
+
+        res.json({
+            portfolioAssets,
+            totalShares: portfolioAssets.reduce((sum, asset) => sum + asset.totalShares, 0)
+        });
+    } catch (err) {
+        console.error('Error in getPortfolioDistribution:', err.message);
         res.status(500).send('Server error');
     }
 };
