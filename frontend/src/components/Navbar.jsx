@@ -52,31 +52,10 @@ function Navbar() {
               Invest
             </a>
           </li>
-          <li className={styles.dropdown}>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                toggleDropdown();
-              }}
-            >
-              Markets <span className={styles.dropdownIcon}>▼</span>
+          <li>
+            <a href="/stocks" onClick={(e) => handleNavigation("/stocks", e)}>
+              Stocks
             </a>
-            <ul className={`${styles.dropdownMenu} ${dropdownOpen ? styles.active : ""}`}>
-              <li>
-                <a href="/stocks" onClick={(e) => handleNavigation("/stocks", e)}>
-                  Stocks
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/commodities"
-                  onClick={(e) => handleNavigation("/commodities", e)}
-                >
-                  Commodities
-                </a>
-              </li>
-            </ul>
           </li>
           <li>
             <a

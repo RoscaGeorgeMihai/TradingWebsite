@@ -15,4 +15,4 @@ router.get('/me', auth, authController.getCurrentUser);
 // Logout user
 router.post('/logout', auth, authController.logout);
 
-module.exports = router;
+module.exports = router; 

@@ -2,23 +2,40 @@ const jwt = require('jsonwebtoken');
 const Users = require('../models/Users');
 
 // Basic authentication middleware
+// Basic authentication middleware
 const auth = async (req, res, next) => {
   try {
-    // Get token from cookie
-    const token = req.cookies.token;
+    // Get token from Authorization header
+    const authHeader = req.header('Authorization');
+    if (!authHeader) {
+      return res.status(401).json({ message: 'No authentication token, access denied' });
+    }
 
+    // Check if the header has the correct format
+    if (!authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Invalid token format' });
+    }
+
+    // Extract the token
+    const token = authHeader.split(' ')[1];
+        
     if (!token) {
-      return res.status(401).json({ message: 'No token, authorization denied' });
+      return res.status(401).json({ message: 'No authentication token, access denied' });
     }
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+        
     // Get user from database
-    const user = await Users.findById(decoded.user.id);
-    
+    const user = await Users.findById(decoded.id);
+        
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
+    }
+
+    // Check if account is still active
+    if (user.status === 'deactivate') {
+      return res.status(403).json({ message: 'Your account has been deactivated' });
     }
 
     // Add user to request object
@@ -31,19 +48,18 @@ const auth = async (req, res, next) => {
 };
 
 // Admin authentication middleware - should be used AFTER auth middleware
-// Admin authentication middleware - should be used AFTER auth middleware
-const isAdmin = (req, res, next) => {
-  // Check if req.user exists (should be set by auth middleware)
-  if (!req.user) {
-    return res.status(500).json({ message: 'Server error: User not authenticated before admin check' });
+const adminAuth = async (req, res, next) => {
+  try {
+    await auth(req, res, () => {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+      }
+      next();
+    });
+  } catch (error) {
+    console.error('Admin auth middleware error:', error);
+    res.status(403).json({ message: 'Access denied' });
   }
-
-  // Check if user has admin role - using role field instead of isAdmin
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Access denied. Admin rights required.' });
-  }
-
-  next();
 };
 
-module.exports = { auth, isAdmin };
+module.exports = { auth, adminAuth, isAdmin: adminAuth };

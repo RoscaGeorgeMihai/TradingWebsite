@@ -10,9 +10,9 @@ const authReducer = (state, action) => {
       return {
         ...state,
         isAuthenticated: true,
-        user: action.payload,
+        user: action.payload.user,
         loading: false,
-        isAdmin: action.payload.role === 'admin'
+        isAdmin: action.payload.user.role === 'admin'
       };
     case 'LOGOUT':
       return {
@@ -62,12 +62,19 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          dispatch({ type: 'AUTH_ERROR' });
+          return;
+        }
+
         const res = await api.get('/api/auth/me');
         dispatch({
           type: 'USER_LOADED',
           payload: res.data
         });
       } catch (err) {
+        localStorage.removeItem('token');
         dispatch({ type: 'AUTH_ERROR' });
       }
     };
@@ -80,9 +87,12 @@ const AuthProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING' });
       const res = await api.post('/api/auth/login', { email, password });
       
+      // Save token to localStorage
+      localStorage.setItem('token', res.data.token);
+      
       dispatch({
         type: 'LOGIN',
-        payload: res.data.user
+        payload: res.data
       });
       
       return true;
@@ -102,9 +112,12 @@ const AuthProvider = ({ children }) => {
         password 
       });
       
+      // Save token to localStorage
+      localStorage.setItem('token', res.data.token);
+      
       dispatch({
         type: 'LOGIN',
-        payload: res.data.user
+        payload: res.data
       });
       
       return true;
@@ -117,10 +130,12 @@ const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await api.post('/api/auth/logout');
+      localStorage.removeItem('token');
       dispatch({ type: 'LOGOUT' });
     } catch (err) {
       console.error('Logout error:', err);
       // Still logout on frontend even if backend fails
+      localStorage.removeItem('token');
       dispatch({ type: 'LOGOUT' });
     }
   };

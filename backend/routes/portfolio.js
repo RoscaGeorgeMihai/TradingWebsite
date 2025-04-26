@@ -63,4 +63,9 @@ router.post('/save-current-value', auth, portfolioController.saveCurrentPortfoli
 // @access  Private
 router.post('/calculate-performance', auth, portfolioController.calculatePerformance);
 
+// @route   GET /api/portfolio/distribution
+// @desc    Get portfolio distribution data across all users
+// @access  Private
+router.get('/distribution', auth, portfolioController.getPortfolioDistribution);
+
 module.exports = router;

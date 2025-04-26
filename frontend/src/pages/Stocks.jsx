@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import styles from '../styles/Stocks.module.css'
 import api from '../services/axios'
+import marketstackApi from '../services/marketstackApi'
 
 const Stocks = () => {
   const [activeCategory, setActiveCategory] = useState('all')
@@ -9,6 +10,7 @@ const Stocks = () => {
   const [stocksData, setStocksData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [stockPrices, setStockPrices] = useState({})
 
   const categories = [
     { id: 'all', name: 'All Stocks' },
@@ -24,11 +26,17 @@ const Stocks = () => {
   ]
 
   useEffect(() => {
-    const fetchStocks = async () => {
+    const fetchData = async () => {
       setLoading(true)
       try {
         const response = await api.get('/api/stocks')
-        setStocksData(response.data || []) // Set to empty array if response.data is undefined
+        setStocksData(response.data || [])
+
+        if (response.data && response.data.length > 0) {
+          const symbols = response.data.map(stock => stock.symbol)
+          const prices = await marketstackApi.getMultipleStockQuotes(symbols)
+          setStockPrices(prices)
+        }
       } catch (err) {
         setError('Failed to fetch stocks. Please try again later.')
         console.error('Error fetching stocks:', err)
@@ -37,7 +45,7 @@ const Stocks = () => {
       }
     }
 
-    fetchStocks()
+    fetchData()
   }, [])
 
   const filteredStocks = stocksData?.filter((stock) => {
@@ -48,6 +56,18 @@ const Stocks = () => {
       activeCategory === 'all' || stock.category === activeCategory
     return matchesSearch && matchesCategory
   }) || []
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(price);
+  };
+
+  const formatChange = (change) => {
+    const formattedChange = parseFloat(change).toFixed(2);
+    return `${formattedChange}%`;
+  };
 
   return (
     <div className={styles.container}>
@@ -100,30 +120,47 @@ const Stocks = () => {
 
       {!loading && !error && (
         <div className={styles.stocksGrid}>
-          {filteredStocks.map((stock) => (
-            <Link
-              to={`/stocks/${stock.symbol}`}
-              key={stock.symbol}
-              className={styles.stockCard}
-              style={{ textDecoration: 'none', color: 'inherit' }}
-            >
-              <div className={styles.stockHeader}>
-                <div
-                  className={styles.stockIcon}
-                  style={{ backgroundColor: stock.color || '#0dcaf0' }}
-                >
-                  {stock.symbol[0]}
+          {filteredStocks.map((stock) => {
+            const priceData = stockPrices[stock.symbol] || {};
+            return (
+              <Link
+                to={`/stocks/${stock.symbol}`}
+                key={stock.symbol}
+                className={styles.stockCard}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <div className={styles.stockHeader}>
+                  <div
+                    className={styles.stockIcon}
+                    style={{ backgroundColor: stock.color || '#0dcaf0' }}
+                  >
+                    {stock.symbol[0]}
+                  </div>
+                  <div className={styles.stockDetails}>
+                    <div className={styles.stockName}>{stock.name}</div>
+                    <div className={styles.stockSymbol}>{stock.symbol}</div>
+                  </div>
+                  <div className={styles.stockPriceInfo}>
+                    <div className={styles.stockPrice}>
+                      {priceData.price ? formatPrice(priceData.price) : 'Loading...'}
+                    </div>
+                    <div className={`${styles.stockPriceChange} ${priceData.changePercent >= 0 ? styles.positive : styles.negative}`}>
+                      {priceData.changePercent ? formatChange(priceData.changePercent) : '0.00%'}
+                    </div>
+                  </div>
                 </div>
-                <div className={styles.stockDetails}>
-                  <div className={styles.stockName}>{stock.name}</div>
-                  <div className={styles.stockSymbol}>{stock.symbol}</div>
+                <div className={styles.stockFooter}>
+                  <div className={styles.stockStats}>
+                    <div className={styles.statItem}>
+                      <span className={styles.statLabel}>Category</span>
+                      <span className={styles.statValue}>{stock.category}</span>
+                    </div>
+                  </div>
+                  <div className={styles.viewDetailsTag}>View Details →</div>
                 </div>
-              </div>
-              <div className={styles.stockFooter}>
-                <div className={styles.stockCategory}>{stock.category}</div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
 
