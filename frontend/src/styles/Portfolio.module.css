@@ -510,7 +510,8 @@
   .alert {
     display: flex;
     align-items: flex-start;
-    padding: 10px 0;
+    gap: 12px;
+    padding: 12px;
     border-bottom: 1px solid var(--border-color);
   }
     
@@ -519,11 +520,10 @@
   }
     
   .alertDot {
-    width: 0.75rem;
-    height: 0.75rem;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    margin-right: 0.75rem;
-    margin-top: 0.25rem;
+    margin-top: 6px;
   }
     
   .alertDotSuccess {
@@ -539,12 +539,12 @@
   }
     
   .alertTitle {
-    font-weight: 500;
-    margin-bottom: 5px;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
   }
     
   .alertTime {
-    font-size: 12px;
+    font-size: 0.8rem;
     color: var(--text-secondary);
   }
   
@@ -716,4 +716,20 @@
 
   .performanceDetails span {
     font-size: 0.9rem;
+  }
+
+  .deleteAlertButton {
+    background: none;
+    border: none;
+    color: var(--negative);
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 4px;
+  }
+
+  .deleteAlertButton:hover {
+    color: var(--negative);
+    text-decoration: underline;
   }

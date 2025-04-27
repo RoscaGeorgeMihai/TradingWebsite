@@ -12,6 +12,7 @@ const Portfolio = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stocksLoading, setStocksLoading] = useState(false);
+  const [priceAlerts, setPriceAlerts] = useState([]);
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [screenSize, setScreenSize] = useState('large');
@@ -21,22 +22,21 @@ const Portfolio = () => {
       if (isAuthenticated) {
         setLoading(true);
         
-        // Obține datele portofoliului și istoricul în paralel
-        const [portfolioResponse, historyResponse, colorMap] = await Promise.all([
+        // Get portfolio data, history, and price alerts in parallel
+        const [portfolioResponse, historyResponse, colorMap, priceAlertsResponse] = await Promise.all([
           api.get('/api/portfolio'),
           api.get('/api/portfolio/history'),
-          fetchStockColors() // Adăugat aici
+          fetchStockColors(),
+          api.get('/api/portfolio/price-alerts')
         ]);
   
         const data = portfolioResponse.data;
         const history = historyResponse.data;
+        const alerts = priceAlertsResponse.data;
   
-        // Codul existent pentru performance...
-        
-        // Actualizează culorile activelor
+        // Update colors for assets
         if (data && data.assets && data.assets.length > 0) {
           data.assets = data.assets.map(asset => {
-            // Folosește culoarea din API dacă există, altfel păstrează culoarea existentă sau generează una aleatoare
             const color = colorMap[asset.symbol] || 
                          asset.color || 
                          `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
@@ -50,13 +50,15 @@ const Portfolio = () => {
   
         setPortfolioData(data);
         setPortfolioHistory(history);
+        setPriceAlerts(alerts);
   
         if (data && data.assets && data.assets.length > 0) {
           fetchCurrentStockPrices(data);
         }
       }
     } catch (err) {
-      // Codul existent pentru tratarea erorilor
+      console.error('Error fetching portfolio data:', err);
+      setError('Failed to load portfolio data');
     } finally {
       setLoading(false);
     }
@@ -969,18 +971,54 @@ const Performance = () => {
   };
 
   const Alerts = () => {
-    if (!hasAlerts) {
+    const activeAlerts = priceAlerts.filter(alert => alert.isActive);
+    const allAlerts = [
+      ...(portfolioData?.alerts || []),
+      ...activeAlerts.map(alert => ({
+        id: alert._id,
+        message: `Price alert for ${alert.symbol}: ${alert.type === 'above' ? 'Above' : 'Below'} $${alert.price}`,
+        type: 'info',
+        time: 'Active',
+        isPriceAlert: true
+      }))
+    ];
+
+    if (allAlerts.length === 0) {
       return (
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <h3 className={styles.h3}>Alerts</h3>
           </div>
           <div className={styles.cardBody}>
-            <div className={styles.emptyMessage}>You don&apos;t have any new alerts.</div>
+            <div className={styles.emptyMessage}>You don't have any alerts.</div>
           </div>
         </div>
       );
     }
+
+    const handleDeleteAlert = async (alertId, isPriceAlert) => {
+      try {
+        if (isPriceAlert) {
+          // Delete price alert
+          await api.delete(`/api/portfolio/price-alerts/${alertId}`);
+          // Update both states
+          setPriceAlerts(prev => prev.filter(a => a._id !== alertId));
+          setPortfolioData(prev => ({
+            ...prev,
+            alerts: prev.alerts.filter(a => a.id !== alertId)
+          }));
+        } else {
+          // Delete regular alert
+          await api.put(`/api/portfolio/alerts/${alertId}`);
+          setPortfolioData(prev => ({
+            ...prev,
+            alerts: prev.alerts.filter(a => a.id !== alertId)
+          }));
+        }
+      } catch (err) {
+        console.error('Error deleting alert:', err);
+      }
+    };
 
     return (
       <div className={styles.card}>
@@ -988,12 +1026,18 @@ const Performance = () => {
           <h3 className={styles.h3}>Alerts</h3>
         </div>
         <div className={styles.cardBody}>
-          {portfolioData.alerts.map((alert, index) => (
+          {allAlerts.map((alert, index) => (
             <div key={index} className={styles.alert}>
               <div className={`${styles.alertDot} ${alert.type === 'success' ? styles.alertDotSuccess : styles.alertDotDanger}`}></div>
               <div className={styles.alertContent}>
                 <div className={styles.alertTitle}>{alert.message}</div>
                 <div className={styles.alertTime}>{alert.time}</div>
+                <button 
+                  className={styles.deleteAlertButton}
+                  onClick={() => handleDeleteAlert(alert.id, alert.isPriceAlert)}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}

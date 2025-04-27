@@ -68,4 +68,24 @@ router.post('/calculate-performance', auth, portfolioController.calculatePerform
 // @access  Private
 router.get('/distribution', auth, portfolioController.getPortfolioDistribution);
 
+// @route   POST /api/portfolio/price-alerts
+// @desc    Create a new price alert
+// @access  Private
+router.post('/price-alerts', auth, portfolioController.createPriceAlert);
+
+// @route   GET /api/portfolio/price-alerts
+// @desc    Get user's price alerts
+// @access  Private
+router.get('/price-alerts', auth, portfolioController.getPriceAlerts);
+
+// @route   DELETE /api/portfolio/price-alerts/:alertId
+// @desc    Delete a price alert
+// @access  Private
+router.delete('/price-alerts/:alertId', auth, portfolioController.deletePriceAlert);
+
+// @route   PUT /api/portfolio/price-alerts/:alertId
+// @desc    Update a price alert
+// @access  Private
+router.put('/price-alerts/:alertId', auth, portfolioController.updatePriceAlert);
+
 module.exports = router;

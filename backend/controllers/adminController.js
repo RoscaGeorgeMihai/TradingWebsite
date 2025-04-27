@@ -4,6 +4,7 @@ const PortfolioHistory = require('../models/PortfolioHistory');
 const Stock = require('../models/Stock');
 const PortfolioAsset = require('../models/PortfolioAsset');
 const marketstackApi = require('../services/marketstackApi');
+const emailService = require('../services/emailService');
 
 // Get dashboard data
 exports.getDashboardData = async (req, res) => {
@@ -467,5 +468,49 @@ exports.getPopularStocks = async (req, res) => {
     } catch (err) {
         console.error('Error fetching popular stocks:', err);
         res.status(500).json({ message: 'Error fetching popular stocks' });
+    }
+};
+
+// Get newsletter subscribers
+exports.getNewsletterSubscribers = async (req, res) => {
+    try {
+        const subscribers = await Users.find({ newsletterSubscribed: true })
+            .select('email firstName lastName');
+        res.json(subscribers);
+    } catch (err) {
+        console.error('Error fetching newsletter subscribers:', err);
+        res.status(500).json({ message: 'Error fetching newsletter subscribers' });
+    }
+};
+
+// Send newsletter
+exports.sendNewsletter = async (req, res) => {
+    try {
+        const { subject, content } = req.body;
+        
+        if (!subject || !content) {
+            return res.status(400).json({ message: 'Subject and content are required' });
+        }
+
+        // Get all subscribers
+        const subscribers = await Users.find({ newsletterSubscribed: true })
+            .select('email firstName lastName');
+
+        if (subscribers.length === 0) {
+            return res.status(404).json({ message: 'No subscribers found' });
+        }
+
+        // Send newsletter using email service
+        const result = await emailService.sendNewsletter(subscribers, subject, content);
+
+        res.json({
+            message: result.message,
+            recipients: subscribers.length,
+            subject,
+            content
+        });
+    } catch (err) {
+        console.error('Error sending newsletter:', err);
+        res.status(500).json({ message: 'Error sending newsletter' });
     }
 };

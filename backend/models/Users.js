@@ -43,6 +43,10 @@ const usersSchema = new mongoose.Schema({
     investedAmount: {
         type: Number,
         default: 0
+    },
+    newsletterSubscribed: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

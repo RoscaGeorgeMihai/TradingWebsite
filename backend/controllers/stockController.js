@@ -87,4 +87,15 @@ exports.deleteStock = async (req, res) => {
     console.error('Error deleting stock:', err);
     res.status(500).json({ message: 'Error deleting stock' });
   }
+};
+
+// Get popular stocks
+exports.getPopularStocks = async (req, res) => {
+    try {
+        const popularStocks = await Stock.find({ isPopular: true });
+        res.json(popularStocks);
+    } catch (err) {
+        console.error('Error fetching popular stocks:', err);
+        res.status(500).json({ message: 'Error fetching popular stocks' });
+    }
 }; 

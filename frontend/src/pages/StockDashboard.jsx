@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from '../styles/StockDashboard.module.css';
 import api from '../services/axios';
+import marketstackApi from '../services/marketstackApi';
 
 const FINNHUB_API_KEY = 'cvtcg9hr01qhup0vkq3gcvtcg9hr01qhup0vkq40';
 
@@ -36,22 +37,9 @@ const StockDashboard = () => {
 
       console.log('Fetching prices for symbols:', allSymbols);
 
-      const quotesResponse = await api.get('/marketstack/intraday/latest', {
-        params: { symbols: allSymbols.join(',') }
-      });
-
-      if (quotesResponse.data && quotesResponse.data.data) {
-        const quotesMap = {};
-        quotesResponse.data.data.forEach(quote => {
-          if (quote.symbol) {
-            quotesMap[quote.symbol] = {
-              price: quote.last || quote.close || 0,
-              changePercent: quote.change_percent || 0
-            };
-          }
-        });
-        setStockPrices(quotesMap);
-      }
+      // Folosim marketstackApi în loc de API direct
+      const prices = await marketstackApi.getMultipleStockQuotes(allSymbols);
+      setStockPrices(prices);
     } catch (err) {
       console.error('Error updating prices:', err);
     }
@@ -61,8 +49,8 @@ const StockDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch popular stocks
-        const popularResponse = await api.get('/api/admin/stocks/popular');
+        // Fetch popular stocks using the new public route
+        const popularResponse = await api.get('/api/stocks/popular');
         setPopularStocks(popularResponse.data);
 
         // Fetch all stocks and sort by creation date to get the newest ones
@@ -187,7 +175,7 @@ const StockDashboard = () => {
                   <div className={styles.cryptoPrice}>
                     {priceData.price ? formatPrice(priceData.price) : 'Loading...'}
                   </div>
-                  <div className={priceData.changePercent >= 0 ? styles.priceUp : styles.priceDown}>
+                  <div className={`${styles.priceChange} ${priceData.changePercent >= 0 ? styles.priceUp : styles.priceDown}`}>
                     {priceData.changePercent ? formatChange(priceData.changePercent) : '0.00%'}
                   </div>
                 </div>
@@ -234,7 +222,7 @@ const StockDashboard = () => {
                   <div className={styles.cryptoPrice}>
                     {priceData.price ? formatPrice(priceData.price) : 'Loading...'}
                   </div>
-                  <div className={priceData.changePercent >= 0 ? styles.priceUp : styles.priceDown}>
+                  <div className={`${styles.priceChange} ${priceData.changePercent >= 0 ? styles.priceUp : styles.priceDown}`}>
                     {priceData.changePercent ? formatChange(priceData.changePercent) : '0.00%'}
                   </div>
                 </div>
