@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_KEY = '809465cd231141db8a09832ee9946255';
+const API_KEY = 'API_KEY';
 const BASE_URL = '/marketstack';
 
 const CACHE_DURATIONS = {
