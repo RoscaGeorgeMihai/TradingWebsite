@@ -6,6 +6,9 @@ const stockController = require('../controllers/stockController');
 // Get all stocks
 router.get('/', auth, stockController.getAllStocks);
 
+// Get popular stocks (accessible to all authenticated users)
+router.get('/popular', auth, stockController.getPopularStocks);
+
 // Get stock by symbol
 router.get('/:symbol', auth, stockController.getStockBySymbol);
 

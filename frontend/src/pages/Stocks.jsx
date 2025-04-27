@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { Link } from 'react-router-dom'
 import styles from '../styles/Stocks.module.css'
 import api from '../services/axios'
 import marketstackApi from '../services/marketstackApi'
+import { AuthContext } from '../components/AuthContext'
 
 const Stocks = () => {
+  const { isAuthenticated, user } = useContext(AuthContext);
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [stocksData, setStocksData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [stockPrices, setStockPrices] = useState({})
+  const [newsletterStatus, setNewsletterStatus] = useState(false)
+  const [newsletterMessage, setNewsletterMessage] = useState('')
 
   const categories = [
     { id: 'all', name: 'All Stocks' },
@@ -24,6 +28,36 @@ const Stocks = () => {
     { id: 'Utilities', name: 'Utilities' },
     { id: 'Other', name: 'Other' },
   ]
+
+  const handleNewsletterToggle = async () => {
+    try {
+      const response = await api.put('/api/users/newsletter', {
+        subscribed: !newsletterStatus
+      });
+      
+      if (response.data) {
+        setNewsletterStatus(response.data.newsletterSubscribed);
+        setNewsletterMessage(response.data.newsletterSubscribed ? 
+          'Successfully subscribed to newsletter!' : 
+          'Successfully unsubscribed from newsletter!'
+        );
+        
+        // Clear message after 3 seconds
+        setTimeout(() => setNewsletterMessage(''), 3000);
+      }
+    } catch (err) {
+      console.error('Error updating newsletter subscription:', err);
+      setNewsletterMessage(err.response?.data?.message || 'Failed to update newsletter subscription. Please try again.');
+      // Clear error message after 3 seconds
+      setTimeout(() => setNewsletterMessage(''), 3000);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      setNewsletterStatus(user.newsletterSubscribed);
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -169,6 +203,32 @@ const Stocks = () => {
           <p>No stocks found matching your criteria.</p>
         </div>
       )}
+
+      <div className={styles.newsletterSection}>
+        <div className={styles.newsletterContent}>
+          <h3>Stay Updated with Market News</h3>
+          <p>Subscribe to our newsletter for daily market updates, stock tips, website news and investment insights.</p>
+          {isAuthenticated ? (
+            <div className={styles.newsletterActions}>
+              <button 
+                className={`${styles.newsletterButton} ${newsletterStatus ? styles.subscribed : ''}`}
+                onClick={handleNewsletterToggle}
+              >
+                {newsletterStatus ? 'Unsubscribe' : 'Subscribe'}
+              </button>
+              {newsletterMessage && (
+                <div className={styles.newsletterMessage}>
+                  {newsletterMessage}
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link to="/login" className={styles.newsletterButton}>
+              Login to Subscribe
+            </Link>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

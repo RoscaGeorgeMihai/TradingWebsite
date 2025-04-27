@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import PropTypes from 'prop-types'
 import styles from '../styles/StockDetails.module.css'
 import marketstackApi from '../services/marketstackApi'
+import api from '../services/axios'
 import StockChart from '../components/StockChart'
 import ApiErrorBoundary from '../components/ApiErrorBoundary'
 import { useParams, useNavigate } from 'react-router-dom'
@@ -26,6 +27,11 @@ const StockDetail = ({ stockSymbolProp }) => {
   const [retryCount, setRetryCount] = useState(0)
   const maxRetries = 3
   const navigate = useNavigate()
+  const [showPriceAlertModal, setShowPriceAlertModal] = useState(false)
+  const [priceAlertValue, setPriceAlertValue] = useState('')
+  const [priceAlertType, setPriceAlertType] = useState('above') // 'above' or 'below'
+  const [priceAlertError, setPriceAlertError] = useState('')
+  const [priceAlertSuccess, setPriceAlertSuccess] = useState('')
 
   const [performanceData, setPerformanceData] = useState({
     day: { change: 0, percentChange: 0 },
@@ -972,6 +978,32 @@ const StockDetail = ({ stockSymbolProp }) => {
     navigate(`/sell/${stockSymbol}`);
   };
 
+  const handleSetPriceAlert = async () => {
+    try {
+      setPriceAlertError('')
+      setPriceAlertSuccess('')
+
+      if (!priceAlertValue || isNaN(priceAlertValue) || parseFloat(priceAlertValue) <= 0) {
+        setPriceAlertError('Please enter a valid price')
+        return
+      }
+
+      const response = await api.post('/api/portfolio/price-alerts', {
+        symbol: stockSymbol,
+        price: parseFloat(priceAlertValue),
+        type: priceAlertType
+      })
+
+      setPriceAlertSuccess('Price alert set successfully!')
+      setShowPriceAlertModal(false)
+      setPriceAlertValue('')
+      setPriceAlertType('above')
+    } catch (err) {
+      console.error('Error setting price alert:', err)
+      setPriceAlertError(err.response?.data?.message || 'Failed to set price alert')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
@@ -1691,11 +1723,60 @@ const StockDetail = ({ stockSymbolProp }) => {
         </div>
 
         <div className={styles.tradingActions}>
-          <button className={styles.setAlertButton}>Set Price Alert</button>
-          <button className={styles.refreshButton} onClick={() => fetchAllData(true)}>
-            Refresh Data
+          <button className={styles.setAlertButton} onClick={() => setShowPriceAlertModal(true)}>
+            Set Price Alert
           </button>
         </div>
+
+        {showPriceAlertModal && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modal}>
+              <div className={styles.modalHeader}>
+                <h2>Set Price Alert for {stockSymbol}</h2>
+                <button className={styles.closeButton} onClick={() => setShowPriceAlertModal(false)}>×</button>
+              </div>
+              <div className={styles.modalBody}>
+                <div className={styles.alertTypeSelector}>
+                  <button 
+                    className={`${styles.alertTypeButton} ${priceAlertType === 'above' ? styles.active : ''}`}
+                    onClick={() => setPriceAlertType('above')}
+                  >
+                    Above
+                  </button>
+                  <button 
+                    className={`${styles.alertTypeButton} ${priceAlertType === 'below' ? styles.active : ''}`}
+                    onClick={() => setPriceAlertType('below')}
+                  >
+                    Below
+                  </button>
+                </div>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="priceAlert">Price</label>
+                  <input
+                    type="number"
+                    id="priceAlert"
+                    className={styles.priceInput}
+                    value={priceAlertValue}
+                    onChange={(e) => setPriceAlertValue(e.target.value)}
+                    placeholder="Enter price"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+                {priceAlertError && <div className={styles.errorMessage}>{priceAlertError}</div>}
+                {priceAlertSuccess && <div className={styles.successMessage}>{priceAlertSuccess}</div>}
+                <div className={styles.modalActions}>
+                  <button className={styles.cancelButton} onClick={() => setShowPriceAlertModal(false)}>
+                    Cancel
+                  </button>
+                  <button className={styles.confirmButton} onClick={handleSetPriceAlert}>
+                    Set Alert
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ApiErrorBoundary>
   )

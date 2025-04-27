@@ -15,6 +15,7 @@ const portfolioRoutes = require('./routes/portfolio');
 const stockRoutes = require('./routes/stockRoutes');
 const adminRoutes = require('./routes/admin');
 const marketstackRoutes = require('./routes/marketstack');
+const usersRoutes = require('./routes/users');
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/invest', investRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/marketstack', marketstackRoutes);
+app.use('/api/users', usersRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

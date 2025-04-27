@@ -144,6 +144,7 @@ const AdminPage = () => {
       { id: 'assets', name: 'Assets', icon: '💰' },
       { id: 'add-asset', name: 'Add Asset', icon: '➕' },
       { id: 'popular-stocks', name: 'Popular Stocks', icon: '⭐' },
+      { id: 'newsletter', name: 'Newsletter', icon: '📧' },
     ];
     
     return (
@@ -194,6 +195,7 @@ const AdminPage = () => {
         case 'assets': return 'Asset Management';
         case 'add-asset': return 'Add New Assets';
         case 'popular-stocks': return 'Popular Stocks';
+        case 'newsletter': return 'Newsletter Management';
         default: return 'Admin Dashboard';
       }
     };
@@ -1522,6 +1524,188 @@ const AdminPage = () => {
     );
   };
   
+  // NewsletterContent component
+  const NewsletterContent = () => {
+    const [subscribers, setSubscribers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [formData, setFormData] = useState({
+      subject: '',
+      content: ''
+    });
+    const [sending, setSending] = useState(false);
+    const [success, setSuccess] = useState('');
+    const { isAuthenticated, isAdmin } = useContext(AuthContext);
+
+    useEffect(() => {
+      // Check authentication before fetching
+      if (!isAuthenticated || !isAdmin) {
+        setError('You must be logged in as an admin to access this page');
+        setLoading(false);
+        return;
+      }
+
+      fetchSubscribers();
+    }, [isAuthenticated, isAdmin]);
+
+    const fetchSubscribers = async () => {
+      try {
+        console.log('Fetching subscribers...');
+        const response = await api.get('/api/admin/newsletter/subscribers');
+        console.log('Subscribers response:', response.data);
+        setSubscribers(response.data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching subscribers:', error);
+        setError(error.response?.data?.message || 'Failed to load subscribers');
+        setLoading(false);
+      }
+    };
+
+    const handleChange = (e) => {
+      const { name, value } = e.target;
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    };
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setSending(true);
+      setError('');
+      setSuccess('');
+
+      try {
+        console.log('Sending newsletter...');
+        const response = await api.post('/api/admin/newsletter/send', formData);
+        console.log('Newsletter response:', response.data);
+        setSuccess(response.data.message);
+        setFormData({ subject: '', content: '' });
+      } catch (error) {
+        console.error('Error sending newsletter:', error);
+        setError(error.response?.data?.message || 'Failed to send newsletter');
+      } finally {
+        setSending(false);
+      }
+    };
+
+    if (!isAuthenticated || !isAdmin) {
+      return (
+        <div className={styles.errorContainer}>
+          <div className={styles.errorMessage}>
+            <h3>Access Denied</h3>
+            <p>You must be logged in as an admin to access this page.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (loading) {
+      return (
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingMessage}>Loading subscribers...</div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className={styles.errorContainer}>
+          <div className={styles.errorMessage}>
+            <h3>Error Loading Subscribers</h3>
+            <p>{error}</p>
+            <button 
+              className={styles.btn}
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.newsletterContainer}>
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h3 className={styles.h3}>Newsletter Management</h3>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.newsletterStats}>
+              <div className={styles.statCard}>
+                <div className={styles.statValue}>{subscribers.length}</div>
+                <div className={styles.statLabel}>Total Subscribers</div>
+              </div>
+            </div>
+
+            <form className={styles.newsletterForm} onSubmit={handleSubmit}>
+              <div className={styles.formGroup}>
+                <label htmlFor="subject">Subject</label>
+                <input
+                  type="text"
+                  id="subject"
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  required
+                  className={styles.formInput}
+                  placeholder="Enter newsletter subject"
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="content">Content</label>
+                <textarea
+                  id="content"
+                  name="content"
+                  value={formData.content}
+                  onChange={handleChange}
+                  required
+                  className={styles.formTextarea}
+                  placeholder="Enter newsletter content"
+                  rows="10"
+                />
+              </div>
+
+              {error && <div className={styles.alertDanger}>{error}</div>}
+              {success && <div className={styles.alertSuccess}>{success}</div>}
+
+              <button 
+                type="submit" 
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled={sending}
+              >
+                {sending ? 'Sending...' : 'Send Newsletter'}
+              </button>
+            </form>
+
+            <div className={styles.subscribersList}>
+              <h4>Subscribers List</h4>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th className={styles.th}>Name</th>
+                    <th className={styles.th}>Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscribers.map((subscriber) => (
+                    <tr key={subscriber._id}>
+                      <td className={styles.td}>{subscriber.firstName} {subscriber.lastName}</td>
+                      <td className={styles.td}>{subscriber.email}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <div className={styles.adminPage}>
       <AdminSidebar />
@@ -1533,6 +1717,7 @@ const AdminPage = () => {
         {activePage === 'users' && <UsersContent />}
         {activePage === 'assets' && <AssetsContent />}
         {activePage === 'popular-stocks' && <PopularStocksContent />}
+        {activePage === 'newsletter' && <NewsletterContent />}
       </div>
     </div>
   );

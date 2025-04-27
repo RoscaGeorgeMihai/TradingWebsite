@@ -19,11 +19,13 @@ const authRoutes = require('./routes/auth');
 const investRoutes = require('./routes/investRoutes');
 const adminRoutes = require('./routes/admin');
 const stockRoutes = require('./routes/stockRoutes');
+const usersRoutes = require('./routes/users');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/invest', investRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/stocks', stockRoutes);
+app.use('/api/users', usersRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

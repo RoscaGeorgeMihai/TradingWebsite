@@ -643,3 +643,73 @@ body {
       font-size: 1.3rem;
   }
 }
+
+.newsletterSection {
+  margin-top: 40px;
+  padding: 30px;
+  background: linear-gradient(to right, var(--primary-color), var(--dark-bg));
+  border-radius: var(--border-radius);
+  color: var(--text-color);
+}
+
+.newsletterContent {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.newsletterContent h3 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  color: var(--secondary-color);
+}
+
+.newsletterContent p {
+  font-size: 16px;
+  margin-bottom: 20px;
+  opacity: 0.9;
+}
+
+.newsletterActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.newsletterButton {
+  padding: 12px 24px;
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.newsletterButton:hover {
+  background-color: #0ab8d9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.newsletterButton.subscribed {
+  background-color: var(--success-color);
+}
+
+.newsletterMessage {
+  padding: 10px;
+  border-radius: var(--border-radius);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+  font-size: 14px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

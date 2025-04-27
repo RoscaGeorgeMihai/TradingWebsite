@@ -1160,3 +1160,158 @@ th {
 .exchangeCard a:hover {
   text-decoration: underline;
 }
+
+/* Price Alert Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-color);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  line-height: 1;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.alertTypeSelector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.alertTypeButton {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.alertTypeButton.active {
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  border-color: var(--secondary-color);
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputGroup label {
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.priceInput {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--text-color);
+  font-size: 1rem;
+}
+
+.priceInput:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.1);
+}
+
+.errorMessage {
+  color: var(--negative);
+  font-size: 0.9rem;
+  padding: 8px;
+  border: 1px solid var(--negative);
+  border-radius: var(--border-radius);
+  background-color: rgba(255, 82, 82, 0.1);
+}
+
+.successMessage {
+  color: var(--positive);
+  font-size: 0.9rem;
+  padding: 8px;
+  border: 1px solid var(--positive);
+  border-radius: var(--border-radius);
+  background-color: rgba(0, 200, 83, 0.1);
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancelButton,
+.confirmButton {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.confirmButton {
+  background-color: var(--secondary-color);
+  border: none;
+  color: var(--primary-color);
+}
+
+.cancelButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.confirmButton:hover {
+  background-color: #0ab8d9;
+}

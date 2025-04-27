@@ -8,24 +8,27 @@ module.exports = function(app) {
     createProxyMiddleware({
       target: 'http://localhost:5000',
       changeOrigin: true,
+      secure: false,
+      onError: (err, req, res) => {
+        console.error('Proxy Error:', err);
+        res.status(500).json({ error: 'Proxy Error' });
+      }
     })
   );
 
   // Proxy pentru Marketstack API
   app.use(
-    '/marketstack',  // Toate cererile care încep cu /marketstack
+    '/marketstack',
     createProxyMiddleware({
       target: 'http://api.marketstack.com/v2',
       changeOrigin: true,
       pathRewrite: {
-        '^/marketstack': '', // Elimină prefixul /marketstack din URL
+        '^/marketstack': '',
       },
       onProxyReq: (proxyReq) => {
-        // Adaugă cheia API la toate cererile către Marketstack
         proxyReq.path += `${proxyReq.path.includes('?') ? '&' : '?'}access_key=809465cd231141db8a09832ee9946255`;
       },
       headers: {
-        // Poți adăuga headere suplimentare dacă este necesar
         'Cache-Control': 'no-cache',
       },
     })

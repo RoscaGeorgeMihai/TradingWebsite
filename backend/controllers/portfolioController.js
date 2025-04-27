@@ -4,6 +4,7 @@ const PortfolioTransaction = require('../models/PortfolioTransaction');
 const PortfolioHistory = require('../models/PortfolioHistory');
 const Alert = require('../models/Alert');
 const Stock = require('../models/Stock');
+const PriceAlert = require('../models/PriceAlert');
 const mongoose = require('mongoose');
 const axios = require('axios');
 const marketstackApi = require('../services/marketstackApi');
@@ -1008,5 +1009,141 @@ exports.getPortfolioDistribution = async (req, res) => {
     } catch (err) {
         console.error('Error in getPortfolioDistribution:', err.message);
         res.status(500).send('Server error');
+    }
+};
+
+exports.createPriceAlert = async (req, res) => {
+    try {
+        const { symbol, price, type } = req.body;
+
+        if (!symbol || !price || !type) {
+            return res.status(400).json({ message: 'Please provide all required fields' });
+        }
+
+        if (type !== 'above' && type !== 'below') {
+            return res.status(400).json({ message: 'Type must be above or below' });
+        }
+
+        const priceAlert = await PriceAlert.create({
+            userId: req.user.id,
+            symbol: symbol.toUpperCase(),
+            price: parseFloat(price),
+            type
+        });
+
+        res.json(priceAlert);
+    } catch (err) {
+        console.error('Error in createPriceAlert:', err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+exports.getPriceAlerts = async (req, res) => {
+    try {
+        // Adaugă un log pentru a verifica ce se întâmplă
+        console.log("Fetching price alerts for user:", req.user.id);
+        
+        const allAlerts = await PriceAlert.find({ userId: req.user.id });
+        console.log("All alerts before filtering:", allAlerts);
+        
+        const priceAlerts = await PriceAlert.find({ 
+            userId: req.user.id,
+            isActive: true 
+        }).sort({ createdAt: -1 });
+        
+        console.log("Filtered active alerts:", priceAlerts);
+
+        res.json(priceAlerts);
+    } catch (err) {
+        console.error('Error in getPriceAlerts:', err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+exports.deletePriceAlert = async (req, res) => {
+    try {
+        const { alertId } = req.params;
+
+        const priceAlert = await PriceAlert.findById(alertId);
+        if (!priceAlert) {
+            return res.status(404).json({ message: 'Price alert not found' });
+        }
+
+        if (priceAlert.userId.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        // Șterge complet alerta în loc să o marchezi ca inactivă
+        await PriceAlert.findByIdAndDelete(alertId);
+
+        res.json({ message: 'Price alert deleted successfully' });
+    } catch (err) {
+        console.error('Error in deletePriceAlert:', err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+exports.updatePriceAlert = async (req, res) => {
+    try {
+        const { alertId } = req.params;
+        const { price, type } = req.body;
+
+        if (!price || !type) {
+            return res.status(400).json({ message: 'Please provide all required fields' });
+        }
+
+        if (type !== 'above' && type !== 'below') {
+            return res.status(400).json({ message: 'Type must be above or below' });
+        }
+
+        const priceAlert = await PriceAlert.findById(alertId);
+        if (!priceAlert) {
+            return res.status(404).json({ message: 'Price alert not found' });
+        }
+
+        if (priceAlert.userId.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        priceAlert.price = parseFloat(price);
+        priceAlert.type = type;
+        await priceAlert.save();
+
+        res.json(priceAlert);
+    } catch (err) {
+        console.error('Error in updatePriceAlert:', err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+// Add this function to check price alerts when updating stock prices
+exports.checkPriceAlerts = async (symbol, currentPrice) => {
+    try {
+        const priceAlerts = await PriceAlert.find({
+            symbol: symbol.toUpperCase(),
+            isActive: true,
+            isTriggered: false
+        });
+
+        for (const alert of priceAlerts) {
+            const shouldTrigger = 
+                (alert.type === 'above' && currentPrice >= alert.price) ||
+                (alert.type === 'below' && currentPrice <= alert.price);
+
+            if (shouldTrigger) {
+                alert.isTriggered = true;
+                alert.isActive = false;
+                await alert.save();
+
+                // Create a notification alert
+                await Alert.create({
+                    userId: alert.userId,
+                    message: `Price alert triggered for ${alert.symbol}: Price is now ${alert.type === 'above' ? 'above' : 'below'} $${alert.price}`,
+                    type: 'warning'
+                });
+            }
+        }
+    } catch (err) {
+        console.error('Error in checkPriceAlerts:', err.message);
     }
 };
